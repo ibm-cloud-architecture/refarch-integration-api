@@ -1,0 +1,1651 @@
+---
+swagger: "2.0"
+info:
+  x-ibm-name: "sample-inventory-api"
+  title: "sample inventory api"
+  version: "1.0.0"
+schemes:
+- "https"
+host: "$(catalog.host)"
+basePath: "/sample-inventory-api"
+consumes:
+- "application/json"
+produces:
+- "application/json"
+securityDefinitions:
+  clientIdHeader:
+    type: "apiKey"
+    in: "header"
+    name: "X-IBM-Client-Id"
+    description: "irazabal@us.ibm.com"
+security:
+- clientIdHeader: []
+x-ibm-configuration:
+  testable: true
+  enforced: true
+  cors:
+    enabled: true
+  assembly:
+    execute:
+    - operation-switch:
+        title: "operation-switch"
+        case:
+        - operations:
+          - verb: "get"
+            path: "/items"
+          execute:
+          - map:
+              title: "items: input"
+              inputs: {}
+              outputs:
+                body:
+                  schema:
+                    $ref: "#/x-ibm-configuration/targets/InventoryServiceService/definitions/itemsInput"
+                  variable: "message.body"
+                  content: "application/xml"
+                content-type:
+                  schema:
+                    type: "string"
+                  variable: "message.headers.content-type"
+                SOAPAction:
+                  schema:
+                    type: "string"
+                  variable: "message.headers.SOAPAction"
+              actions:
+              - set: "content-type"
+                default: "text/xml"
+              - set: "SOAPAction"
+                default: ""
+          - invoke:
+              title: "items: invoke (POST)"
+              target-url: "http://172.16.254.44:9080/inventory/ws"
+              timeout: 60
+              verb: "POST"
+              cache-response: "protocol"
+              cache-ttl: 900
+              output: "itemsOut"
+          - switch:
+              title: "switch"
+              case:
+              - condition: "$(message.status.code) == '200'"
+                execute:
+                - map:
+                    title: "items: output"
+                    inputs:
+                      input:
+                        schema:
+                          $ref: "#/x-ibm-configuration/targets/InventoryServiceService/definitions/itemsOutput"
+                        variable: "itemsOut.body"
+                        content: "application/xml"
+                    outputs:
+                      items:
+                        schema:
+                          $ref: "#/definitions/items2"
+                        variable: "message.body"
+                        content: "application/json"
+                    actions:
+                    - create: "items"
+                      foreach: "input.Envelope.Body.itemsResponse.return"
+                      from: "input.Envelope.Body.itemsResponse.return"
+                      actions:
+                      - set: "id"
+                        from: "id"
+                      - set: "name"
+                        from: "name"
+                      - set: "description"
+                        from: "description"
+                      - set: "price"
+                        from: "price"
+                        value: "'$'+ $(1)"
+                      - set: "imgAlt"
+                        from: "imgAlt"
+                      - set: "img"
+                        from: "img"
+                      - set: "quantity"
+                        from: "quantity"
+              - condition: "$(message.status.code) != '200'"
+                execute:
+                - map:
+                    title: "map fault"
+                    inputs:
+                      input:
+                        schema:
+                          $ref: "#/x-ibm-configuration/targets/InventoryServiceService/definitions/deleteItemFault"
+                        variable: "itemsOut.body"
+                        content: "application/xml"
+                    outputs:
+                      output:
+                        schema:
+                          $ref: "#/x-ibm-configuration/targets/InventoryServiceService/definitions/itemsFault"
+                        variable: "message.body"
+                        content: "application/json"
+                    actions:
+                    - set: "output.Envelope"
+                      from: "input.Envelope"
+                    version: "1.0.0"
+              version: "1.0.0"
+        - operations:
+          - verb: "get"
+            path: "/item/{itemId}"
+          execute:
+          - map:
+              title: "itemById: input"
+              inputs:
+                itemId:
+                  schema:
+                    type: "integer"
+                  variable: "request.parameters.itemId"
+                  content: "application/json"
+              outputs:
+                body:
+                  schema:
+                    $ref: "#/x-ibm-configuration/targets/InventoryServiceService/definitions/itemByIdInput"
+                  variable: "message.body"
+                  content: "application/xml"
+                content-type:
+                  schema:
+                    type: "string"
+                  variable: "message.headers.content-type"
+                SOAPAction:
+                  schema:
+                    type: "string"
+                  variable: "message.headers.SOAPAction"
+              actions:
+              - set: "content-type"
+                default: "text/xml"
+              - set: "SOAPAction"
+              - set: "body.Envelope.Body.itemById.id"
+                from: "itemId"
+          - invoke:
+              title: "itemById: invoke (POST)"
+              target-url: "http://172.16.254.44:9080/inventory/ws"
+              timeout: 60
+              verb: "POST"
+              cache-response: "protocol"
+              cache-ttl: 900
+              output: "itemByIdOut"
+          - switch:
+              title: "switch"
+              case:
+              - condition: "$(message.status.code) == '200'"
+                execute:
+                - map:
+                    title: "itemById: output"
+                    inputs:
+                      input:
+                        schema:
+                          $ref: "#/x-ibm-configuration/targets/InventoryServiceService/definitions/itemByIdOutput"
+                        variable: "itemByIdOut.body"
+                        content: "application/xml"
+                    outputs:
+                      output:
+                        schema:
+                          $ref: "#/definitions/item"
+                        variable: "message.body"
+                    actions:
+                    - set: "output.name"
+                      from: "input.Envelope.Body.itemByIdResponse.return.name"
+                    - set: "output.description"
+                      from: "input.Envelope.Body.itemByIdResponse.return.description"
+                    - set: "output.price"
+                      from: "input.Envelope.Body.itemByIdResponse.return.price"
+                      value: "'$'+$(1)"
+                    - set: "output.itemId"
+                      from: "input.Envelope.Body.itemByIdResponse.return.id"
+                    - set: "output.imgAlt"
+                      from: "input.Envelope.Body.itemByIdResponse.return.imgAlt"
+                    - set: "output.img"
+                      from: "input.Envelope.Body.itemByIdResponse.return.img"
+                    - set: "output.quantity"
+                      from: "input.Envelope.Body.itemByIdResponse.return.quantity"
+              - condition: "$(message.status.code) != '200'"
+                execute:
+                - map:
+                    title: "map fault"
+                    inputs:
+                      input:
+                        schema:
+                          $ref: "#/x-ibm-configuration/targets/InventoryServiceService/definitions/deleteItemFault"
+                        variable: "itemByIdOut.body"
+                        content: "application/xml"
+                    outputs:
+                      output:
+                        schema:
+                          $ref: "#/x-ibm-configuration/targets/InventoryServiceService/definitions/deleteItemFault"
+                        variable: "message.body"
+                        content: "application/json"
+                    actions:
+                    - set: "output.Envelope"
+                      from: "input.Envelope"
+                    version: "1.0.0"
+              version: "1.0.0"
+        - operations:
+          - verb: "post"
+            path: "/items"
+          execute:
+          - map:
+              title: "newItem: input"
+              inputs:
+                input:
+                  schema:
+                    $ref: "#/definitions/item"
+                  variable: "request.body"
+                  content: "application/json"
+              outputs:
+                body:
+                  schema:
+                    $ref: "#/x-ibm-configuration/targets/InventoryServiceService/definitions/newItemInput"
+                  variable: "message.body"
+                  content: "application/xml"
+                content-type:
+                  schema:
+                    type: "string"
+                  variable: "message.headers.content-type"
+                SOAPAction:
+                  schema:
+                    type: "string"
+                  variable: "message.headers.SOAPAction"
+              actions:
+              - set: "content-type"
+                default: "text/xml"
+              - set: "body.Envelope.Body.newItem.arg0.name"
+                from: "input.name"
+              - set: "body.Envelope.Body.newItem.arg0.description"
+                from: "input.description"
+              - set: "body.Envelope.Body.newItem.arg0.price"
+                from: "input.price"
+          - invoke:
+              title: "newItem: invoke (POST)"
+              target-url: "http://172.16.254.44:9080/inventory/ws"
+              timeout: 60
+              verb: "POST"
+              cache-response: "protocol"
+              cache-ttl: 900
+              output: "newItemOut"
+          - switch:
+              title: "switch"
+              case:
+              - condition: "$(message.status.code) == '200'"
+                execute:
+                - map:
+                    title: "newItem: output"
+                    inputs:
+                      input:
+                        schema:
+                          $ref: "#/x-ibm-configuration/targets/InventoryServiceService/definitions/newItemOutput"
+                        variable: "newItemOut.body"
+                        content: "application/xml"
+                    outputs:
+                      output:
+                        schema:
+                          $ref: "#/definitions/item"
+                        variable: "message.body"
+                        content: "application/json"
+                    actions:
+                    - set: "output.itemId"
+                      from: "input.Envelope.Body.newItemResponse.return.id"
+                    - set: "output.name"
+                      from: "input.Envelope.Body.newItemResponse.return.name"
+                    - set: "output.description"
+                      from: "input.Envelope.Body.newItemResponse.return.description"
+                    - set: "output.price"
+                      from: "input.Envelope.Body.newItemResponse.return.price"
+                    - set: "output.imgAlt"
+                      from: "input.Envelope.Body.newItemResponse.return.imgAlt"
+                    - set: "output.img"
+                      from: "input.Envelope.Body.newItemResponse.return.img"
+                    - set: "output.quantity"
+                      from: "input.Envelope.Body.newItemResponse.return.quantity"
+              - condition: "$(message.status.code) != '200'"
+                execute:
+                - map:
+                    title: "map fault"
+                    inputs:
+                      input:
+                        schema:
+                          $ref: "#/x-ibm-configuration/targets/InventoryServiceService/definitions/deleteItemFault"
+                        variable: "newItemOut.body"
+                        content: "application/xml"
+                    outputs:
+                      output:
+                        schema:
+                          $ref: "#/x-ibm-configuration/targets/InventoryServiceService/definitions/deleteItemFault"
+                        variable: "message.body"
+                        content: "application/json"
+                    actions:
+                    - set: "output.Envelope"
+                      from: "input.Envelope"
+                    version: "1.0.0"
+              version: "1.0.0"
+        - operations:
+          - verb: "put"
+            path: "/item/{itemId}"
+          execute:
+          - map:
+              title: "updateItem: input"
+              inputs:
+                item:
+                  schema:
+                    $ref: "#/definitions/item"
+                  variable: "request.body"
+                  content: "application/json"
+              outputs:
+                body:
+                  schema:
+                    $ref: "#/x-ibm-configuration/targets/InventoryServiceService/definitions/updateItemInput"
+                  variable: "message.body"
+                  content: "application/xml"
+                content-type:
+                  schema:
+                    type: "string"
+                  variable: "message.headers.content-type"
+                SOAPAction:
+                  schema:
+                    type: "string"
+                  variable: "message.headers.SOAPAction"
+              actions:
+              - set: "content-type"
+                default: "text/xml"
+              - set: "body.Envelope.Body.updateItem.arg0.id"
+                from: "item.itemId"
+              - set: "body.Envelope.Body.updateItem.arg0.name"
+                from: "item.name"
+              - set: "body.Envelope.Body.updateItem.arg0.description"
+                from: "item.description"
+              - set: "body.Envelope.Body.updateItem.arg0.price"
+                from: "item.price"
+              - set: "body.Envelope.Body.updateItem.arg0.imgAlt"
+                from: "item.imgAlt"
+              - set: "body.Envelope.Body.updateItem.arg0.img"
+                from: "item.img"
+              - set: "body.Envelope.Body.updateItem.arg0.quantity"
+                from: "item.quantity"
+          - invoke:
+              title: "updateItem: invoke"
+              target-url: "http://172.16.254.44:9080/inventory/ws"
+              timeout: 60
+              verb: "POST"
+              cache-response: "protocol"
+              cache-ttl: 900
+              output: "updateItemOut"
+          - switch:
+              title: "switch"
+              case:
+              - condition: "$(message.status.code) == '200'"
+                execute:
+                - map:
+                    title: "updateItem: output"
+                    inputs:
+                      input:
+                        schema:
+                          $ref: "#/x-ibm-configuration/targets/InventoryServiceService/definitions/updateItemOutput"
+                        variable: "updateItemOut.body"
+                        content: "application/xml"
+                    outputs:
+                      output:
+                        schema:
+                          $ref: "#/definitions/item"
+                        variable: "message.body"
+                    actions:
+                    - set: "output"
+                      from: "input.Envelope.Body.updateItemResponse.return"
+              - condition: "$(message.status.code) != '200'"
+                execute:
+                - map:
+                    title: "map fault"
+                    inputs:
+                      input:
+                        schema:
+                          $ref: "#/x-ibm-configuration/targets/InventoryServiceService/definitions/deleteItemFault"
+                        variable: "updateItemOut.body"
+                        content: "application/xml"
+                    outputs:
+                      output:
+                        schema:
+                          $ref: "#/x-ibm-configuration/targets/InventoryServiceService/definitions/deleteItemFault"
+                        variable: "message.body"
+                        content: "application/json"
+                    actions:
+                    - set: "output.Envelope"
+                      from: "input.Envelope"
+                    version: "1.0.0"
+              version: "1.0.0"
+        - operations:
+          - verb: "delete"
+            path: "/item/{itemId}"
+          execute:
+          - xslt:
+              title: "set protocol"
+              input: false
+              version: "1.0.0"
+              source: "<!-- this stylesheet here to get around a bug in 5070 where\
+                \ the invoke is ignoring the protocol-method and instead uses the\
+                \ incoming protocol -->\n<xsl:stylesheet xmlns:xsl=\"http://www.w3.org/1999/XSL/Transform\"\
+                \n                xmlns:dp=\"http://www.datapower.com/extensions\"\
+                \n                extension-element-prefixes=\"dp\"\n\t\t\t\texclude-result-prefixes=\"\
+                dp\" version=\"1.0\">\n\n    <xsl:template match=\"/\">\n        <dp:set-variable\
+                \ name=\"'var://service/protocol-method'\" value=\"'POST'\"/>\n  \
+                \      <xsl:message>protocol-method: <xsl:value-of select=\"dp:variable('var://service/protocol-method')\"\
+                /></xsl:message>\n    </xsl:template>\n</xsl:stylesheet>"
+          - map:
+              title: "deleteItem: input"
+              inputs:
+                itemId:
+                  schema:
+                    type: "integer"
+                  variable: "request.parameters.itemId"
+              outputs:
+                body:
+                  schema:
+                    $ref: "#/x-ibm-configuration/targets/InventoryServiceService/definitions/deleteItemInput"
+                  variable: "message.body"
+                  content: "application/xml"
+                content-type:
+                  schema:
+                    type: "string"
+                  variable: "message.headers.content-type"
+                SOAPAction:
+                  schema:
+                    type: "string"
+                  variable: "message.headers.SOAPAction"
+              actions:
+              - set: "content-type"
+                default: "text/xml"
+              - set: "body.Envelope.Body.deleteItem.id"
+                from: "itemId"
+          - invoke:
+              title: "deleteItem: invoke"
+              target-url: "http://172.16.254.44:9080/inventory/ws"
+              timeout: 60
+              verb: "POST"
+              cache-response: "protocol"
+              cache-ttl: 900
+              output: "deleteItemOut"
+          - switch:
+              title: "switch"
+              case:
+              - condition: "apim.getvariable('message.status.code') == '200'"
+                execute:
+                - map:
+                    title: "deleteItem: output"
+                    inputs: {}
+                    outputs:
+                      output:
+                        schema:
+                          type: "object"
+                          properties:
+                            result:
+                              type: "string"
+                              name: "result"
+                        variable: "message.body"
+                        content: "application/json"
+                    actions:
+                    - set: "output.result"
+                      default: "Sucess"
+              - condition: "apim.getvariable('message.status.code') != '200'"
+                execute:
+                - map:
+                    title: "map fault"
+                    inputs:
+                      input:
+                        schema:
+                          $ref: "#/x-ibm-configuration/targets/InventoryServiceService/definitions/deleteItemFault"
+                        variable: "deleteItemOut.body"
+                        content: "application/xml"
+                    outputs:
+                      output:
+                        schema:
+                          $ref: "#/x-ibm-configuration/targets/InventoryServiceService/definitions/deleteItemFault"
+                        variable: "message.body"
+                        content: "application/json"
+                    actions:
+                    - set: "output.Envelope"
+                      from: "input.Envelope"
+                    version: "1.0.0"
+              version: "1.0.0"
+        otherwise: []
+        version: "1.0.0"
+    catch:
+    - errors:
+      - "OperationError"
+      execute: []
+  phase: "realized"
+  targets:
+    InventoryServiceService:
+      swagger: "2.0"
+      info:
+        title: "InventoryServiceService"
+        description: ""
+        x-ibm-name: "inventoryserviceservice"
+        version: "1.0.0"
+      schemes:
+      - "https"
+      basePath: "/InventoryServiceService"
+      produces:
+      - "application/xml"
+      consumes:
+      - "text/xml"
+      securityDefinitions:
+        clientID:
+          type: "apiKey"
+          name: "X-IBM-Client-Id"
+          in: "header"
+          description: ""
+      security:
+      - clientID: []
+      x-ibm-configuration:
+        type: "wsdl"
+        wsdl-definition:
+          wsdl: "5919d6ebe4b0f3e41af98831"
+          service: "InventoryServiceService"
+          port: "InventoryServicePort"
+          soap-version: "1.1"
+        assembly:
+          execute:
+          - proxy:
+              title: "proxy"
+              target-url: "http://172.16.254.44:9080/inventory/ws"
+        gateway: "datapower-gateway"
+        enforced: true
+        testable: true
+        phase: "realized"
+        cors:
+          enabled: true
+      paths:
+        /items:
+          post:
+            summary: "Operation items"
+            description: ""
+            operationId: "items"
+            x-ibm-soap:
+              soap-action: ""
+              soap-operation: "{http://ws.inventory/}items"
+            parameters:
+            - in: "body"
+              name: "body"
+              required: true
+              schema:
+                $ref: "#/x-ibm-configuration/targets/InventoryServiceService/definitions/itemsInput"
+            responses:
+              500:
+                description: ""
+                schema:
+                  $ref: "#/x-ibm-configuration/targets/InventoryServiceService/definitions/itemsFault"
+              default:
+                description: ""
+                schema:
+                  $ref: "#/x-ibm-configuration/targets/InventoryServiceService/definitions/itemsOutput"
+        /updateItem:
+          post:
+            summary: "Operation updateItem"
+            description: ""
+            operationId: "updateItem"
+            x-ibm-soap:
+              soap-action: ""
+              soap-operation: "{http://ws.inventory/}updateItem"
+            parameters:
+            - in: "body"
+              name: "body"
+              required: true
+              schema:
+                $ref: "#/x-ibm-configuration/targets/InventoryServiceService/definitions/updateItemInput"
+            responses:
+              500:
+                description: ""
+                schema:
+                  $ref: "#/x-ibm-configuration/targets/InventoryServiceService/definitions/updateItemFault"
+              default:
+                description: ""
+                schema:
+                  $ref: "#/x-ibm-configuration/targets/InventoryServiceService/definitions/updateItemOutput"
+        /itemByName:
+          post:
+            summary: "Operation itemByName"
+            description: ""
+            operationId: "itemByName"
+            x-ibm-soap:
+              soap-action: ""
+              soap-operation: "{http://ws.inventory/}itemByName"
+            parameters:
+            - in: "body"
+              name: "body"
+              required: true
+              schema:
+                $ref: "#/x-ibm-configuration/targets/InventoryServiceService/definitions/itemByNameInput"
+            responses:
+              500:
+                description: ""
+                schema:
+                  $ref: "#/x-ibm-configuration/targets/InventoryServiceService/definitions/itemByNameFault"
+              default:
+                description: ""
+                schema:
+                  $ref: "#/x-ibm-configuration/targets/InventoryServiceService/definitions/itemByNameOutput"
+        /deleteItem:
+          post:
+            summary: "Operation deleteItem"
+            description: ""
+            operationId: "deleteItem"
+            x-ibm-soap:
+              soap-action: ""
+              soap-operation: "{http://ws.inventory/}deleteItem"
+            parameters:
+            - in: "body"
+              name: "body"
+              required: true
+              schema:
+                $ref: "#/x-ibm-configuration/targets/InventoryServiceService/definitions/deleteItemInput"
+            responses:
+              500:
+                description: ""
+                schema:
+                  $ref: "#/x-ibm-configuration/targets/InventoryServiceService/definitions/deleteItemFault"
+              default:
+                description: ""
+                schema:
+                  $ref: "#/x-ibm-configuration/targets/InventoryServiceService/definitions/deleteItemOutput"
+        /newItem:
+          post:
+            summary: "Operation newItem"
+            description: ""
+            operationId: "newItem"
+            x-ibm-soap:
+              soap-action: ""
+              soap-operation: "{http://ws.inventory/}newItem"
+            parameters:
+            - in: "body"
+              name: "body"
+              required: true
+              schema:
+                $ref: "#/x-ibm-configuration/targets/InventoryServiceService/definitions/newItemInput"
+            responses:
+              500:
+                description: ""
+                schema:
+                  $ref: "#/x-ibm-configuration/targets/InventoryServiceService/definitions/newItemFault"
+              default:
+                description: ""
+                schema:
+                  $ref: "#/x-ibm-configuration/targets/InventoryServiceService/definitions/newItemOutput"
+        /sayHello:
+          post:
+            summary: "Operation sayHello"
+            description: ""
+            operationId: "sayHello"
+            x-ibm-soap:
+              soap-action: ""
+              soap-operation: "{http://ws.inventory/}sayHello"
+            parameters:
+            - in: "body"
+              name: "body"
+              required: true
+              schema:
+                $ref: "#/x-ibm-configuration/targets/InventoryServiceService/definitions/sayHelloInput"
+            responses:
+              default:
+                description: ""
+                schema:
+                  $ref: "#/x-ibm-configuration/targets/InventoryServiceService/definitions/sayHelloOutput"
+        /itemById:
+          post:
+            summary: "Operation itemById"
+            description: ""
+            operationId: "itemById"
+            x-ibm-soap:
+              soap-action: ""
+              soap-operation: "{http://ws.inventory/}itemById"
+            parameters:
+            - in: "body"
+              name: "body"
+              required: true
+              schema:
+                $ref: "#/x-ibm-configuration/targets/InventoryServiceService/definitions/itemByIdInput"
+            responses:
+              500:
+                description: ""
+                schema:
+                  $ref: "#/x-ibm-configuration/targets/InventoryServiceService/definitions/itemByIdFault"
+              default:
+                description: ""
+                schema:
+                  $ref: "#/x-ibm-configuration/targets/InventoryServiceService/definitions/itemByIdOutput"
+      definitions:
+        Security:
+          xml:
+            namespace: "http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd"
+            prefix: "wsse"
+          type: "object"
+          properties:
+            UsernameToken:
+              type: "object"
+              properties:
+                Username:
+                  type: "string"
+                Password:
+                  type: "string"
+        itemsInput:
+          type: "object"
+          properties:
+            Envelope:
+              xml:
+                prefix: "soap-env"
+                namespace: "http://schemas.xmlsoap.org/soap/envelope/"
+              type: "object"
+              properties:
+                Header:
+                  $ref: "#/x-ibm-configuration/targets/InventoryServiceService/definitions/itemsHeader"
+                Body:
+                  type: "object"
+                  properties:
+                    items:
+                      $ref: "#/x-ibm-configuration/targets/InventoryServiceService/definitions/items_tns"
+          example: "\n<soap-env:Envelope xmlns:soap-env=\"http://schemas.xmlsoap.org/soap/envelope/\"\
+            >\n <soap-env:Header>\n  <wsse:Security xmlns:wsse=\"http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd\"\
+            >\n   <UsernameToken>\n    <Username>string</Username>\n    <Password>string</Password>\n\
+            \   </UsernameToken>\n  </wsse:Security>\n </soap-env:Header>\n <soap-env:Body>\n\
+            \  <tns:items xmlns:tns=\"http://ws.inventory/\"></tns:items>\n </soap-env:Body>\n\
+            </soap-env:Envelope>"
+        itemsHeader:
+          type: "object"
+          properties:
+            Security:
+              $ref: "#/x-ibm-configuration/targets/InventoryServiceService/definitions/Security"
+        itemsOutput:
+          type: "object"
+          properties:
+            Envelope:
+              xml:
+                prefix: "soap-env"
+                namespace: "http://schemas.xmlsoap.org/soap/envelope/"
+              type: "object"
+              properties:
+                Body:
+                  type: "object"
+                  properties:
+                    itemsResponse:
+                      $ref: "#/x-ibm-configuration/targets/InventoryServiceService/definitions/itemsResponse_tns"
+          example: "\n<soap-env:Envelope xmlns:soap-env=\"http://schemas.xmlsoap.org/soap/envelope/\"\
+            >\n <soap-env:Body>\n  <tns:itemsResponse xmlns:tns=\"http://ws.inventory/\"\
+            >\n   <return><!-- between zero and unlimited repetitions of this element\
+            \ -->\n    <id><!-- mandatory -->3</id>\n    <name>string</name>\n   \
+            \ <description>string</description>\n    <price><!-- mandatory -->3.14</price>\n\
+            \    <imgAlt>string</imgAlt>\n    <img>string</img>\n    <quantity><!--\
+            \ mandatory -->3</quantity>\n   </return>\n  </tns:itemsResponse>\n </soap-env:Body>\n\
+            </soap-env:Envelope>"
+        itemsFault:
+          type: "object"
+          properties:
+            Envelope:
+              xml:
+                prefix: "soap-env"
+                namespace: "http://schemas.xmlsoap.org/soap/envelope/"
+              type: "object"
+              properties:
+                Body:
+                  type: "object"
+                  properties:
+                    Fault:
+                      type: "object"
+                      properties:
+                        faultcode:
+                          xml:
+                            prefix: ""
+                            namespace: ""
+                          type: "string"
+                        faultstring:
+                          xml:
+                            prefix: ""
+                            namespace: ""
+                          type: "string"
+                        faultactor:
+                          xml:
+                            prefix: ""
+                            namespace: ""
+                          type: "string"
+                        detail:
+                          xml:
+                            prefix: ""
+                            namespace: ""
+                          type: "object"
+                          properties:
+                            DALException:
+                              $ref: "#/x-ibm-configuration/targets/InventoryServiceService/definitions/DALException_tns"
+        updateItemInput:
+          type: "object"
+          properties:
+            Envelope:
+              xml:
+                prefix: "soap-env"
+                namespace: "http://schemas.xmlsoap.org/soap/envelope/"
+              type: "object"
+              properties:
+                Header:
+                  $ref: "#/x-ibm-configuration/targets/InventoryServiceService/definitions/updateItemHeader"
+                Body:
+                  type: "object"
+                  properties:
+                    updateItem:
+                      $ref: "#/x-ibm-configuration/targets/InventoryServiceService/definitions/updateItem_tns"
+          example: "\n<soap-env:Envelope xmlns:soap-env=\"http://schemas.xmlsoap.org/soap/envelope/\"\
+            >\n <soap-env:Header>\n  <wsse:Security xmlns:wsse=\"http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd\"\
+            >\n   <UsernameToken>\n    <Username>string</Username>\n    <Password>string</Password>\n\
+            \   </UsernameToken>\n  </wsse:Security>\n </soap-env:Header>\n <soap-env:Body>\n\
+            \  <tns:updateItem xmlns:tns=\"http://ws.inventory/\">\n   <arg0>\n  \
+            \  <id><!-- mandatory -->3</id>\n    <name>string</name>\n    <description>string</description>\n\
+            \    <price><!-- mandatory -->3.14</price>\n    <imgAlt>string</imgAlt>\n\
+            \    <img>string</img>\n    <quantity><!-- mandatory -->3</quantity>\n\
+            \   </arg0>\n  </tns:updateItem>\n </soap-env:Body>\n</soap-env:Envelope>"
+        updateItemHeader:
+          type: "object"
+          properties:
+            Security:
+              $ref: "#/x-ibm-configuration/targets/InventoryServiceService/definitions/Security"
+        updateItemOutput:
+          type: "object"
+          properties:
+            Envelope:
+              xml:
+                prefix: "soap-env"
+                namespace: "http://schemas.xmlsoap.org/soap/envelope/"
+              type: "object"
+              properties:
+                Body:
+                  type: "object"
+                  properties:
+                    updateItemResponse:
+                      $ref: "#/x-ibm-configuration/targets/InventoryServiceService/definitions/updateItemResponse_tns"
+          example: "\n<soap-env:Envelope xmlns:soap-env=\"http://schemas.xmlsoap.org/soap/envelope/\"\
+            >\n <soap-env:Body>\n  <tns:updateItemResponse xmlns:tns=\"http://ws.inventory/\"\
+            >\n   <return>\n    <id><!-- mandatory -->3</id>\n    <name>string</name>\n\
+            \    <description>string</description>\n    <price><!-- mandatory -->3.14</price>\n\
+            \    <imgAlt>string</imgAlt>\n    <img>string</img>\n    <quantity><!--\
+            \ mandatory -->3</quantity>\n   </return>\n  </tns:updateItemResponse>\n\
+            \ </soap-env:Body>\n</soap-env:Envelope>"
+        updateItemFault:
+          type: "object"
+          properties:
+            Envelope:
+              xml:
+                prefix: "soap-env"
+                namespace: "http://schemas.xmlsoap.org/soap/envelope/"
+              type: "object"
+              properties:
+                Body:
+                  type: "object"
+                  properties:
+                    Fault:
+                      type: "object"
+                      properties:
+                        faultcode:
+                          xml:
+                            prefix: ""
+                            namespace: ""
+                          type: "string"
+                        faultstring:
+                          xml:
+                            prefix: ""
+                            namespace: ""
+                          type: "string"
+                        faultactor:
+                          xml:
+                            prefix: ""
+                            namespace: ""
+                          type: "string"
+                        detail:
+                          xml:
+                            prefix: ""
+                            namespace: ""
+                          type: "object"
+                          properties:
+                            DALException:
+                              $ref: "#/x-ibm-configuration/targets/InventoryServiceService/definitions/DALException_tns"
+        itemByNameInput:
+          type: "object"
+          properties:
+            Envelope:
+              xml:
+                prefix: "soap-env"
+                namespace: "http://schemas.xmlsoap.org/soap/envelope/"
+              type: "object"
+              properties:
+                Header:
+                  $ref: "#/x-ibm-configuration/targets/InventoryServiceService/definitions/itemByNameHeader"
+                Body:
+                  type: "object"
+                  properties:
+                    itemByName:
+                      $ref: "#/x-ibm-configuration/targets/InventoryServiceService/definitions/itemByName_tns"
+          example: "\n<soap-env:Envelope xmlns:soap-env=\"http://schemas.xmlsoap.org/soap/envelope/\"\
+            >\n <soap-env:Header>\n  <wsse:Security xmlns:wsse=\"http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd\"\
+            >\n   <UsernameToken>\n    <Username>string</Username>\n    <Password>string</Password>\n\
+            \   </UsernameToken>\n  </wsse:Security>\n </soap-env:Header>\n <soap-env:Body>\n\
+            \  <tns:itemByName xmlns:tns=\"http://ws.inventory/\">\n   <name>string</name>\n\
+            \  </tns:itemByName>\n </soap-env:Body>\n</soap-env:Envelope>"
+        itemByNameHeader:
+          type: "object"
+          properties:
+            Security:
+              $ref: "#/x-ibm-configuration/targets/InventoryServiceService/definitions/Security"
+        itemByNameOutput:
+          type: "object"
+          properties:
+            Envelope:
+              xml:
+                prefix: "soap-env"
+                namespace: "http://schemas.xmlsoap.org/soap/envelope/"
+              type: "object"
+              properties:
+                Body:
+                  type: "object"
+                  properties:
+                    itemByNameResponse:
+                      $ref: "#/x-ibm-configuration/targets/InventoryServiceService/definitions/itemByNameResponse_tns"
+          example: "\n<soap-env:Envelope xmlns:soap-env=\"http://schemas.xmlsoap.org/soap/envelope/\"\
+            >\n <soap-env:Body>\n  <tns:itemByNameResponse xmlns:tns=\"http://ws.inventory/\"\
+            >\n   <return>\n    <id><!-- mandatory -->3</id>\n    <name>string</name>\n\
+            \    <description>string</description>\n    <price><!-- mandatory -->3.14</price>\n\
+            \    <imgAlt>string</imgAlt>\n    <img>string</img>\n    <quantity><!--\
+            \ mandatory -->3</quantity>\n   </return>\n  </tns:itemByNameResponse>\n\
+            \ </soap-env:Body>\n</soap-env:Envelope>"
+        itemByNameFault:
+          type: "object"
+          properties:
+            Envelope:
+              xml:
+                prefix: "soap-env"
+                namespace: "http://schemas.xmlsoap.org/soap/envelope/"
+              type: "object"
+              properties:
+                Body:
+                  type: "object"
+                  properties:
+                    Fault:
+                      type: "object"
+                      properties:
+                        faultcode:
+                          xml:
+                            prefix: ""
+                            namespace: ""
+                          type: "string"
+                        faultstring:
+                          xml:
+                            prefix: ""
+                            namespace: ""
+                          type: "string"
+                        faultactor:
+                          xml:
+                            prefix: ""
+                            namespace: ""
+                          type: "string"
+                        detail:
+                          xml:
+                            prefix: ""
+                            namespace: ""
+                          type: "object"
+                          properties:
+                            DALException:
+                              $ref: "#/x-ibm-configuration/targets/InventoryServiceService/definitions/DALException_tns"
+        deleteItemInput:
+          type: "object"
+          properties:
+            Envelope:
+              xml:
+                prefix: "soap-env"
+                namespace: "http://schemas.xmlsoap.org/soap/envelope/"
+              type: "object"
+              properties:
+                Header:
+                  $ref: "#/x-ibm-configuration/targets/InventoryServiceService/definitions/deleteItemHeader"
+                Body:
+                  type: "object"
+                  properties:
+                    deleteItem:
+                      $ref: "#/x-ibm-configuration/targets/InventoryServiceService/definitions/deleteItem_tns"
+          example: "\n<soap-env:Envelope xmlns:soap-env=\"http://schemas.xmlsoap.org/soap/envelope/\"\
+            >\n <soap-env:Header>\n  <wsse:Security xmlns:wsse=\"http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd\"\
+            >\n   <UsernameToken>\n    <Username>string</Username>\n    <Password>string</Password>\n\
+            \   </UsernameToken>\n  </wsse:Security>\n </soap-env:Header>\n <soap-env:Body>\n\
+            \  <tns:deleteItem xmlns:tns=\"http://ws.inventory/\">\n   <id><!-- mandatory\
+            \ -->3</id>\n  </tns:deleteItem>\n </soap-env:Body>\n</soap-env:Envelope>"
+        deleteItemHeader:
+          type: "object"
+          properties:
+            Security:
+              $ref: "#/x-ibm-configuration/targets/InventoryServiceService/definitions/Security"
+        deleteItemOutput:
+          type: "object"
+          properties:
+            Envelope:
+              xml:
+                prefix: "soap-env"
+                namespace: "http://schemas.xmlsoap.org/soap/envelope/"
+              type: "object"
+              properties:
+                Body:
+                  type: "object"
+                  properties:
+                    deleteItemResponse:
+                      $ref: "#/x-ibm-configuration/targets/InventoryServiceService/definitions/deleteItemResponse_tns"
+          example: "\n<soap-env:Envelope xmlns:soap-env=\"http://schemas.xmlsoap.org/soap/envelope/\"\
+            >\n <soap-env:Body>\n  <tns:deleteItemResponse xmlns:tns=\"http://ws.inventory/\"\
+            >\n   <return>string</return>\n  </tns:deleteItemResponse>\n </soap-env:Body>\n\
+            </soap-env:Envelope>"
+        deleteItemFault:
+          type: "object"
+          properties:
+            Envelope:
+              xml:
+                prefix: "soap-env"
+                namespace: "http://schemas.xmlsoap.org/soap/envelope/"
+              type: "object"
+              properties:
+                Body:
+                  type: "object"
+                  properties:
+                    Fault:
+                      type: "object"
+                      properties:
+                        faultcode:
+                          xml:
+                            prefix: ""
+                            namespace: ""
+                          type: "string"
+                        faultstring:
+                          xml:
+                            prefix: ""
+                            namespace: ""
+                          type: "string"
+                        faultactor:
+                          xml:
+                            prefix: ""
+                            namespace: ""
+                          type: "string"
+                        detail:
+                          xml:
+                            prefix: ""
+                            namespace: ""
+                          type: "object"
+                          properties:
+                            DALException:
+                              $ref: "#/x-ibm-configuration/targets/InventoryServiceService/definitions/DALException_tns"
+        newItemInput:
+          type: "object"
+          properties:
+            Envelope:
+              xml:
+                prefix: "soap-env"
+                namespace: "http://schemas.xmlsoap.org/soap/envelope/"
+              type: "object"
+              properties:
+                Header:
+                  $ref: "#/x-ibm-configuration/targets/InventoryServiceService/definitions/newItemHeader"
+                Body:
+                  type: "object"
+                  properties:
+                    newItem:
+                      $ref: "#/x-ibm-configuration/targets/InventoryServiceService/definitions/newItem_tns"
+          example: "\n<soap-env:Envelope xmlns:soap-env=\"http://schemas.xmlsoap.org/soap/envelope/\"\
+            >\n <soap-env:Header>\n  <wsse:Security xmlns:wsse=\"http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd\"\
+            >\n   <UsernameToken>\n    <Username>string</Username>\n    <Password>string</Password>\n\
+            \   </UsernameToken>\n  </wsse:Security>\n </soap-env:Header>\n <soap-env:Body>\n\
+            \  <tns:newItem xmlns:tns=\"http://ws.inventory/\">\n   <arg0>\n    <id><!--\
+            \ mandatory -->3</id>\n    <name>string</name>\n    <description>string</description>\n\
+            \    <price><!-- mandatory -->3.14</price>\n    <imgAlt>string</imgAlt>\n\
+            \    <img>string</img>\n    <quantity><!-- mandatory -->3</quantity>\n\
+            \   </arg0>\n  </tns:newItem>\n </soap-env:Body>\n</soap-env:Envelope>"
+        newItemHeader:
+          type: "object"
+          properties:
+            Security:
+              $ref: "#/x-ibm-configuration/targets/InventoryServiceService/definitions/Security"
+        newItemOutput:
+          type: "object"
+          properties:
+            Envelope:
+              xml:
+                prefix: "soap-env"
+                namespace: "http://schemas.xmlsoap.org/soap/envelope/"
+              type: "object"
+              properties:
+                Body:
+                  type: "object"
+                  properties:
+                    newItemResponse:
+                      $ref: "#/x-ibm-configuration/targets/InventoryServiceService/definitions/newItemResponse_tns"
+          example: "\n<soap-env:Envelope xmlns:soap-env=\"http://schemas.xmlsoap.org/soap/envelope/\"\
+            >\n <soap-env:Body>\n  <tns:newItemResponse xmlns:tns=\"http://ws.inventory/\"\
+            >\n   <return>\n    <id><!-- mandatory -->3</id>\n    <name>string</name>\n\
+            \    <description>string</description>\n    <price><!-- mandatory -->3.14</price>\n\
+            \    <imgAlt>string</imgAlt>\n    <img>string</img>\n    <quantity><!--\
+            \ mandatory -->3</quantity>\n   </return>\n  </tns:newItemResponse>\n\
+            \ </soap-env:Body>\n</soap-env:Envelope>"
+        newItemFault:
+          type: "object"
+          properties:
+            Envelope:
+              xml:
+                prefix: "soap-env"
+                namespace: "http://schemas.xmlsoap.org/soap/envelope/"
+              type: "object"
+              properties:
+                Body:
+                  type: "object"
+                  properties:
+                    Fault:
+                      type: "object"
+                      properties:
+                        faultcode:
+                          xml:
+                            prefix: ""
+                            namespace: ""
+                          type: "string"
+                        faultstring:
+                          xml:
+                            prefix: ""
+                            namespace: ""
+                          type: "string"
+                        faultactor:
+                          xml:
+                            prefix: ""
+                            namespace: ""
+                          type: "string"
+                        detail:
+                          xml:
+                            prefix: ""
+                            namespace: ""
+                          type: "object"
+                          properties:
+                            DALException:
+                              $ref: "#/x-ibm-configuration/targets/InventoryServiceService/definitions/DALException_tns"
+        sayHelloInput:
+          type: "object"
+          properties:
+            Envelope:
+              xml:
+                prefix: "soap-env"
+                namespace: "http://schemas.xmlsoap.org/soap/envelope/"
+              type: "object"
+              properties:
+                Header:
+                  $ref: "#/x-ibm-configuration/targets/InventoryServiceService/definitions/sayHelloHeader"
+                Body:
+                  type: "object"
+                  properties:
+                    sayHello:
+                      $ref: "#/x-ibm-configuration/targets/InventoryServiceService/definitions/sayHello_tns"
+          example: "\n<soap-env:Envelope xmlns:soap-env=\"http://schemas.xmlsoap.org/soap/envelope/\"\
+            >\n <soap-env:Header>\n  <wsse:Security xmlns:wsse=\"http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd\"\
+            >\n   <UsernameToken>\n    <Username>string</Username>\n    <Password>string</Password>\n\
+            \   </UsernameToken>\n  </wsse:Security>\n </soap-env:Header>\n <soap-env:Body>\n\
+            \  <tns:sayHello xmlns:tns=\"http://ws.inventory/\">\n   <name>string</name>\n\
+            \  </tns:sayHello>\n </soap-env:Body>\n</soap-env:Envelope>"
+        sayHelloHeader:
+          type: "object"
+          properties:
+            Security:
+              $ref: "#/x-ibm-configuration/targets/InventoryServiceService/definitions/Security"
+        sayHelloOutput:
+          type: "object"
+          properties:
+            Envelope:
+              xml:
+                prefix: "soap-env"
+                namespace: "http://schemas.xmlsoap.org/soap/envelope/"
+              type: "object"
+              properties:
+                Body:
+                  type: "object"
+                  properties:
+                    sayHelloResponse:
+                      $ref: "#/x-ibm-configuration/targets/InventoryServiceService/definitions/sayHelloResponse_tns"
+          example: "\n<soap-env:Envelope xmlns:soap-env=\"http://schemas.xmlsoap.org/soap/envelope/\"\
+            >\n <soap-env:Body>\n  <tns:sayHelloResponse xmlns:tns=\"http://ws.inventory/\"\
+            >\n   <return>string</return>\n  </tns:sayHelloResponse>\n </soap-env:Body>\n\
+            </soap-env:Envelope>"
+        itemByIdInput:
+          type: "object"
+          properties:
+            Envelope:
+              xml:
+                prefix: "soap-env"
+                namespace: "http://schemas.xmlsoap.org/soap/envelope/"
+              type: "object"
+              properties:
+                Header:
+                  $ref: "#/x-ibm-configuration/targets/InventoryServiceService/definitions/itemByIdHeader"
+                Body:
+                  type: "object"
+                  properties:
+                    itemById:
+                      $ref: "#/x-ibm-configuration/targets/InventoryServiceService/definitions/itemById_tns"
+          example: "\n<soap-env:Envelope xmlns:soap-env=\"http://schemas.xmlsoap.org/soap/envelope/\"\
+            >\n <soap-env:Header>\n  <wsse:Security xmlns:wsse=\"http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd\"\
+            >\n   <UsernameToken>\n    <Username>string</Username>\n    <Password>string</Password>\n\
+            \   </UsernameToken>\n  </wsse:Security>\n </soap-env:Header>\n <soap-env:Body>\n\
+            \  <tns:itemById xmlns:tns=\"http://ws.inventory/\">\n   <id><!-- mandatory\
+            \ -->3</id>\n  </tns:itemById>\n </soap-env:Body>\n</soap-env:Envelope>"
+        itemByIdHeader:
+          type: "object"
+          properties:
+            Security:
+              $ref: "#/x-ibm-configuration/targets/InventoryServiceService/definitions/Security"
+        itemByIdOutput:
+          type: "object"
+          properties:
+            Envelope:
+              xml:
+                prefix: "soap-env"
+                namespace: "http://schemas.xmlsoap.org/soap/envelope/"
+              type: "object"
+              properties:
+                Body:
+                  type: "object"
+                  properties:
+                    itemByIdResponse:
+                      $ref: "#/x-ibm-configuration/targets/InventoryServiceService/definitions/itemByIdResponse_tns"
+          example: "\n<soap-env:Envelope xmlns:soap-env=\"http://schemas.xmlsoap.org/soap/envelope/\"\
+            >\n <soap-env:Body>\n  <tns:itemByIdResponse xmlns:tns=\"http://ws.inventory/\"\
+            >\n   <return>\n    <id><!-- mandatory -->3</id>\n    <name>string</name>\n\
+            \    <description>string</description>\n    <price><!-- mandatory -->3.14</price>\n\
+            \    <imgAlt>string</imgAlt>\n    <img>string</img>\n    <quantity><!--\
+            \ mandatory -->3</quantity>\n   </return>\n  </tns:itemByIdResponse>\n\
+            \ </soap-env:Body>\n</soap-env:Envelope>"
+        itemByIdFault:
+          type: "object"
+          properties:
+            Envelope:
+              xml:
+                prefix: "soap-env"
+                namespace: "http://schemas.xmlsoap.org/soap/envelope/"
+              type: "object"
+              properties:
+                Body:
+                  type: "object"
+                  properties:
+                    Fault:
+                      type: "object"
+                      properties:
+                        faultcode:
+                          xml:
+                            prefix: ""
+                            namespace: ""
+                          type: "string"
+                        faultstring:
+                          xml:
+                            prefix: ""
+                            namespace: ""
+                          type: "string"
+                        faultactor:
+                          xml:
+                            prefix: ""
+                            namespace: ""
+                          type: "string"
+                        detail:
+                          xml:
+                            prefix: ""
+                            namespace: ""
+                          type: "object"
+                          properties:
+                            DALException:
+                              $ref: "#/x-ibm-configuration/targets/InventoryServiceService/definitions/DALException_tns"
+        items_tns:
+          xml:
+            namespace: "http://ws.inventory/"
+            prefix: "tns"
+          type: "object"
+          properties: {}
+          example: "\n<tns:items xmlns:tns=\"http://ws.inventory/\">\n</tns:items>"
+        itemsResponse_tns:
+          xml:
+            namespace: "http://ws.inventory/"
+            prefix: "tns"
+          type: "object"
+          properties:
+            return:
+              type: "array"
+              items:
+                $ref: "#/x-ibm-configuration/targets/InventoryServiceService/definitions/item_tns"
+          example: "\n<tns:itemsResponse xmlns:tns=\"http://ws.inventory/\">\n <return><!--\
+            \ between zero and unlimited repetitions of this element -->\n  <id><!--\
+            \ mandatory -->3</id>\n  <name>string</name>\n  <description>string</description>\n\
+            \  <price><!-- mandatory -->3.14</price>\n  <imgAlt>string</imgAlt>\n\
+            \  <img>string</img>\n  <quantity><!-- mandatory -->3</quantity>\n </return>\n\
+            </tns:itemsResponse>"
+        DALException_tns:
+          xml:
+            namespace: "http://ws.inventory/"
+            prefix: "tns"
+          type: "object"
+          properties:
+            code:
+              type: "string"
+              xml:
+                namespace: ""
+                prefix: ""
+            message:
+              type: "string"
+              xml:
+                namespace: ""
+                prefix: ""
+          example: "\n<tns:DALFault xmlns:tns=\"http://ws.inventory/\">\n <code>string</code>\n\
+            \ <message>string</message>\n</tns:DALFault>"
+        updateItem_tns:
+          xml:
+            namespace: "http://ws.inventory/"
+            prefix: "tns"
+          type: "object"
+          properties:
+            arg0:
+              $ref: "#/x-ibm-configuration/targets/InventoryServiceService/definitions/item_tns"
+          example: "\n<tns:updateItem xmlns:tns=\"http://ws.inventory/\">\n <arg0>\n\
+            \  <id><!-- mandatory -->3</id>\n  <name>string</name>\n  <description>string</description>\n\
+            \  <price><!-- mandatory -->3.14</price>\n  <imgAlt>string</imgAlt>\n\
+            \  <img>string</img>\n  <quantity><!-- mandatory -->3</quantity>\n </arg0>\n\
+            </tns:updateItem>"
+        updateItemResponse_tns:
+          xml:
+            namespace: "http://ws.inventory/"
+            prefix: "tns"
+          type: "object"
+          properties:
+            return:
+              $ref: "#/x-ibm-configuration/targets/InventoryServiceService/definitions/item_tns"
+          example: "\n<tns:updateItemResponse xmlns:tns=\"http://ws.inventory/\">\n\
+            \ <return>\n  <id><!-- mandatory -->3</id>\n  <name>string</name>\n  <description>string</description>\n\
+            \  <price><!-- mandatory -->3.14</price>\n  <imgAlt>string</imgAlt>\n\
+            \  <img>string</img>\n  <quantity><!-- mandatory -->3</quantity>\n </return>\n\
+            </tns:updateItemResponse>"
+        itemByName_tns:
+          xml:
+            namespace: "http://ws.inventory/"
+            prefix: "tns"
+          type: "object"
+          properties:
+            name:
+              type: "string"
+              xml:
+                namespace: ""
+                prefix: ""
+          example: "\n<tns:itemByName xmlns:tns=\"http://ws.inventory/\">\n <name>string</name>\n\
+            </tns:itemByName>"
+        itemByNameResponse_tns:
+          xml:
+            namespace: "http://ws.inventory/"
+            prefix: "tns"
+          type: "object"
+          properties:
+            return:
+              $ref: "#/x-ibm-configuration/targets/InventoryServiceService/definitions/item_tns"
+          example: "\n<tns:itemByNameResponse xmlns:tns=\"http://ws.inventory/\">\n\
+            \ <return>\n  <id><!-- mandatory -->3</id>\n  <name>string</name>\n  <description>string</description>\n\
+            \  <price><!-- mandatory -->3.14</price>\n  <imgAlt>string</imgAlt>\n\
+            \  <img>string</img>\n  <quantity><!-- mandatory -->3</quantity>\n </return>\n\
+            </tns:itemByNameResponse>"
+        deleteItem_tns:
+          xml:
+            namespace: "http://ws.inventory/"
+            prefix: "tns"
+          type: "object"
+          properties:
+            id:
+              type: "integer"
+              format: "int64"
+              xml:
+                namespace: ""
+                prefix: ""
+          required:
+          - "id"
+          example: "\n<tns:deleteItem xmlns:tns=\"http://ws.inventory/\">\n <id><!--\
+            \ mandatory -->3</id>\n</tns:deleteItem>"
+        deleteItemResponse_tns:
+          xml:
+            namespace: "http://ws.inventory/"
+            prefix: "tns"
+          type: "object"
+          properties:
+            return:
+              type: "string"
+              xml:
+                namespace: ""
+                prefix: ""
+          example: "\n<tns:deleteItemResponse xmlns:tns=\"http://ws.inventory/\">\n\
+            \ <return>string</return>\n</tns:deleteItemResponse>"
+        newItem_tns:
+          xml:
+            namespace: "http://ws.inventory/"
+            prefix: "tns"
+          type: "object"
+          properties:
+            arg0:
+              $ref: "#/x-ibm-configuration/targets/InventoryServiceService/definitions/item_tns"
+          example: "\n<tns:newItem xmlns:tns=\"http://ws.inventory/\">\n <arg0>\n\
+            \  <id><!-- mandatory -->3</id>\n  <name>string</name>\n  <description>string</description>\n\
+            \  <price><!-- mandatory -->3.14</price>\n  <imgAlt>string</imgAlt>\n\
+            \  <img>string</img>\n  <quantity><!-- mandatory -->3</quantity>\n </arg0>\n\
+            </tns:newItem>"
+        newItemResponse_tns:
+          xml:
+            namespace: "http://ws.inventory/"
+            prefix: "tns"
+          type: "object"
+          properties:
+            return:
+              $ref: "#/x-ibm-configuration/targets/InventoryServiceService/definitions/item_tns"
+          example: "\n<tns:newItemResponse xmlns:tns=\"http://ws.inventory/\">\n <return>\n\
+            \  <id><!-- mandatory -->3</id>\n  <name>string</name>\n  <description>string</description>\n\
+            \  <price><!-- mandatory -->3.14</price>\n  <imgAlt>string</imgAlt>\n\
+            \  <img>string</img>\n  <quantity><!-- mandatory -->3</quantity>\n </return>\n\
+            </tns:newItemResponse>"
+        sayHello_tns:
+          xml:
+            namespace: "http://ws.inventory/"
+            prefix: "tns"
+          type: "object"
+          properties:
+            name:
+              type: "string"
+              xml:
+                namespace: ""
+                prefix: ""
+          example: "\n<tns:sayHello xmlns:tns=\"http://ws.inventory/\">\n <name>string</name>\n\
+            </tns:sayHello>"
+        sayHelloResponse_tns:
+          xml:
+            namespace: "http://ws.inventory/"
+            prefix: "tns"
+          type: "object"
+          properties:
+            return:
+              type: "string"
+              xml:
+                namespace: ""
+                prefix: ""
+          example: "\n<tns:sayHelloResponse xmlns:tns=\"http://ws.inventory/\">\n\
+            \ <return>string</return>\n</tns:sayHelloResponse>"
+        itemById_tns:
+          xml:
+            namespace: "http://ws.inventory/"
+            prefix: "tns"
+          type: "object"
+          properties:
+            id:
+              type: "integer"
+              format: "int64"
+              xml:
+                namespace: ""
+                prefix: ""
+          required:
+          - "id"
+          example: "\n<tns:itemById xmlns:tns=\"http://ws.inventory/\">\n <id><!--\
+            \ mandatory -->3</id>\n</tns:itemById>"
+        itemByIdResponse_tns:
+          xml:
+            namespace: "http://ws.inventory/"
+            prefix: "tns"
+          type: "object"
+          properties:
+            return:
+              $ref: "#/x-ibm-configuration/targets/InventoryServiceService/definitions/item_tns"
+          example: "\n<tns:itemByIdResponse xmlns:tns=\"http://ws.inventory/\">\n\
+            \ <return>\n  <id><!-- mandatory -->3</id>\n  <name>string</name>\n  <description>string</description>\n\
+            \  <price><!-- mandatory -->3.14</price>\n  <imgAlt>string</imgAlt>\n\
+            \  <img>string</img>\n  <quantity><!-- mandatory -->3</quantity>\n </return>\n\
+            </tns:itemByIdResponse>"
+        item_tns:
+          xml:
+            namespace: ""
+            prefix: ""
+          type: "object"
+          properties:
+            id:
+              type: "integer"
+              format: "int64"
+              xml:
+                namespace: ""
+                prefix: ""
+              x-nullable: true
+            name:
+              type: "string"
+              xml:
+                namespace: ""
+                prefix: ""
+            description:
+              type: "string"
+              xml:
+                namespace: ""
+                prefix: ""
+            price:
+              type: "number"
+              format: "double"
+              xml:
+                namespace: ""
+                prefix: ""
+              x-nullable: true
+            imgAlt:
+              type: "string"
+              xml:
+                namespace: ""
+                prefix: ""
+            img:
+              type: "string"
+              xml:
+                namespace: ""
+                prefix: ""
+            quantity:
+              type: "integer"
+              format: "int32"
+              xml:
+                namespace: ""
+                prefix: ""
+              x-nullable: true
+          required:
+          - "id"
+          - "price"
+          - "quantity"
+          x-xsi-type: "item"
+          x-xsi-type-xml:
+            namespace: "http://ws.inventory/"
+            prefix: "tns"
+paths:
+  /item/{itemId}:
+    get:
+      responses:
+        200:
+          description: "200 OK"
+    parameters:
+    - name: "itemId"
+      type: "string"
+      required: true
+      in: "path"
+    put:
+      responses:
+        200:
+          description: "200 OK"
+      parameters:
+      - name: "item"
+        required: true
+        in: "body"
+        schema:
+          $ref: "#/definitions/item"
+    delete:
+      responses:
+        200:
+          description: "200 OK"
+      parameters:
+      - name: "itemId"
+        type: "integer"
+        required: true
+        in: "path"
+        format: "int32"
+  /items:
+    get:
+      responses:
+        200:
+          description: "200 OK"
+    post:
+      responses:
+        200:
+          description: "200 OK"
+      parameters:
+      - name: "body"
+        required: false
+        in: "body"
+        schema:
+          type: "object"
+        description: "{\"itemId\":999,\"name\":\"item999\",\"description\":\"\",\"\
+          price\":999.99}"
+definitions:
+  item:
+    properties:
+      itemId:
+        type: "integer"
+        description: "unique id"
+        format: "int32"
+      name:
+        type: "string"
+        description: "item's name"
+      description:
+        type: "string"
+      price:
+        type: "number"
+        description: "item's price"
+        format: "float"
+      imgAlt:
+        type: "string"
+      img:
+        type: "string"
+      quantity:
+        type: "integer"
+        format: "int32"
+    additionalProperties: false
+    required:
+    - "price"
+    - "itemId"
+  items2:
+    type: "array"
+    items:
+      type: "object"
+      properties:
+        id:
+          type: "integer"
+          format: "int32"
+        name:
+          type: "string"
+        description:
+          type: "string"
+        price:
+          type: "number"
+          format: "float"
+        imgAlt:
+          type: "string"
+        img:
+          type: "string"
+        quantity:
+          type: "integer"
+          format: "int32"
+      additionalProperties: false
+      required:
+      - "id"
+      - "name"
+      - "price"
+tags: []
