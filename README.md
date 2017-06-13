@@ -3,25 +3,33 @@
 This project is part of the 'IBM Integration Reference Architecture' suite, available at [https://github.com/ibm-cloud-architecture/refarch-integration](https://github.com/ibm-cloud-architecture/refarch-integration)
 
 ## Goals
+This project includes the definition for the inventory API and guidance on how servers are configured and API definitions are done.
+
 The API definition exposes a set of RESTful services for managing a product inventory.
-![invprod](docs/inventory-product.png)
+![invprod](docs/inventory-product.png)  
+
 The API is defined and run on on-premise servers but exposed via secure connection to public cloud so born on cloud applications, like the simple [inventory app](https://github.com/ibm-cloud-architecture/refarch-caseinc-app), can leverage those APIs.
 
 ## Architecture
-As illustrated in the figure below, the Inventory database is not directly accessed by application who needs it, but via a SOA service data access layer developed with JAXWS.
-![Component view](docs/cp-phy-view.png)
-The SOAP interface needs to be mapped to REST api, and using a API economy paradigm, this API will become a product for the CASE Inc IT team.
+As illustrated in the figure below, the Inventory database is not directly accessed by application who needs it, but via a data access layer SOA service developed in Java using JAXWS.
+![Component view](docs/cp-phy-view.png)  
 
-Born on cloud app or micro services access the exposed RESful API using a Bluemix Secure Gateway service, which support the API Connect destination. For detail on how the secure gateway was configured see [note](https://github.com/ibm-cloud-architecture/refarch-integration-utilities/blob/master/docs/ConfigureSecureGateway.md)
+With new programming model to consume RESTful API, existing SOAP interfaces need to be mapped to RESTful apis, and using a API economy paradigm, those APIs will become a product managed by IBM API connect. The *CASE Inc IT team* wants to cover their cost and exposing API may generate a revenue stream.
+
+Born on Bluemix web apps or micro services access the exposed RESTful API using a Bluemix Secure Gateway service, which supports the API Connect destination definition. For detail on how the secure gateway was configured see [note](https://github.com/ibm-cloud-architecture/refarch-integration-utilities/blob/master/docs/ConfigureSecureGateway.md)
 
 The diagram below presents the item/{itemid} URL as defined in API Connect  
 ![](docs/item-id.png)
 
-## How the SOAP interface was mapped to API
+## Server configuration
+TBD
+
+## How the SOAP interface was mapped to RESTful API
 In order to map the SOAP service to a REST api, we followed the following steps:  
 1) create a REST API in the API Manager UI (see tutorial here: https://www.ibm.com/support/knowledgecenter/SSMNED_5.0.0/com.ibm.apic.apionprem.doc/tutorial_apionprem_expose_SOAP.html)
 2) Import the WSDL for the SOAP service in the "Services" component. This is basically an import from either a file or an url. We used the url option by pointing the dialog to on-premiseWebSphere Liberty server: http://172.16.254.44:9080/inventory/ws?WSDL.
 3) Create an assembly for each of the supported REST operations:
+
 ```
           title: operation-switch
           case:
@@ -55,7 +63,7 @@ For a get item by id the pattern is the same as illustrated in the image below:
 Using the REST input parameter, itemId, we need to use it for the SOAP request itemById.id element.:
 ![](docs/inputtosoap.png)
 
-The following diagram illustrates a mapping from the SOAP response of the itemById to the JSON document of the /item/{itemId} which is part of the new exposed API. 
+The following diagram illustrates a mapping from the SOAP response of the itemById to the JSON document of the /item/{itemId} which is part of the new exposed API.
 
 ![itemById](docs/rest2soap-mapping.png)
 
@@ -69,4 +77,4 @@ The connection between the external application and API Connect Gateway is using
 Reusing the devops approach as describe in [this asset](https://github.com/ibm-cloud-architecture/refarch-hybridcloud-blueportal-api/blob/master/HybridDevOpsForAPIC.pdf) ....
 
 ## How to leverage this asset
-On your own API connect installation import the [yaml](https://github.com/ibm-cloud-architecture/refarch-integration-api/blob/master/apiconnect/sample-inventory-api_1.0.0.yaml) delivered in this project.
+Using your own IBM API Connect instance import the [yaml](https://github.com/ibm-cloud-architecture/refarch-integration-api/blob/master/apiconnect/sample-inventory-api_1.0.0.yaml) delivered in this project.
