@@ -22,7 +22,18 @@ The diagram below presents the item/{itemid} URL as defined in API Connect
 ![](docs/item-id.png)
 
 ## Server configuration
-TBD
+Basic installation consists of installing 3 virtual servers: Management (mgmt), Portal, DataPower(DP). To support high availability, a cluster installation just adds more servers, but the basic installation is the same. To achieve high availability you’ll need at a minimum 2 mgmt servers, 2 DP appliances, and 3 Portal servers.
+After the virtual OVA files are loaded, then you can refer here for each configuration:
+1. Mgmt -
+https://www.ibm.com/support/knowledgecenter/en/SSMNED_5.0.0/com.ibm.apic.install.d
+oc/overview_installing_mgmtvm_apimgmt.html
+2. DP -
+https://www.ibm.com/support/knowledgecenter/en/SSMNED_5.0.0/com.ibm.apic.install.d
+oc/overview_installing_gatewayvm_apimgmt.html
+3. Portal -
+https://www.ibm.com/support/knowledgecenter/en/SSMNED_5.0.0/com.ibm.apic.install.d
+oc/tapim_portal_installing_VA.html
+
 
 ## How the SOAP interface was mapped to RESTful API
 In order to map the SOAP service to a REST api, we followed the following steps:  
