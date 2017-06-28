@@ -1,0 +1,9 @@
+cd C:\CurrentProjects\APIMgt\certificates\gateway
+C:\bin\openssl\1.0.2d\openssl.exe genrsa -des3 -passout file:Gateway_Host_Passfile -out Gateway_Host.key 2048
+C:\bin\openssl\1.0.2d\openssl.exe req -config Gateway_Host.conf -new -key Gateway_Host.key -passin file:Gateway_Host_Passfile -out Gateway_Host.csr
+C:\bin\openssl\1.0.2d\openssl.exe x509 -days 1825 -extfile Gateway_Host.ext -CA ..\My_APIC_ROOT\ROOT_APIC.crt -CAkey ..\My_APIC_ROOT\Root_APIC.key -passin file:Gateway_Host_Passfile -CAserial ..\My_APIC_ROOT\ROOT_APIC.serial -in Gateway_Host.csr -req -out Gateway_Host.crt
+C:\bin\openssl\1.0.2d\openssl.exe pkcs12 -export -in Gateway_Host.crt -inkey Gateway_Host.key -passin file:Gateway_Host_Passfile -CAfile ..\My_APIC_ROOT\ROOT_APIC.crt -name APICGatewayCertificate -out Gateway_Host.pkcs12
+(export password is secret)
+C:\bin\openssl\1.0.2d\openssl.exe pkcs12 -in Gateway_Host.pkcs12 -out Gateway_Host.pem -clcerts
+
+

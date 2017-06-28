@@ -1,0 +1,8 @@
+extensions = x509v3
+
+[ x509v3 ]
+nsCertType              = server
+keyUsage                = digitalSignature,nonRepudiation,keyEncipherment
+extendedKeyUsage        = msSGC,nsSGC,serverAuth
+subjectAltName          = DNS:gateway
+subjectAltName          = DNS:gateway.fr.ibm
