@@ -1,0 +1,333 @@
+---
+swagger: "2.0"
+info:
+  x-ibm-name: "iib-inventory-api"
+  title: "iib inventory api"
+  version: "1.0.0"
+schemes:
+- "https"
+basePath: "/iib-inventory-api"
+consumes:
+- "application/json"
+produces:
+- "application/json"
+paths:
+  /login:
+    get:
+      responses:
+        200:
+          description: "200 OK"
+      security:
+      - clientIdHeader: []
+    parameters:
+    - name: "username"
+      type: "string"
+      required: true
+      in: "query"
+    - name: "password"
+      type: "string"
+      required: true
+      in: "query"
+  /item/{id}:
+    parameters:
+    - name: "id"
+      type: "string"
+      required: true
+      in: "path"
+    get:
+      responses:
+        200:
+          description: "200 OK"
+          schema:
+            $ref: "#/definitions/item"
+      operationId: "getId"
+    put:
+      responses:
+        200:
+          description: "200 OK"
+          schema:
+            $ref: "#/definitions/item"
+      operationId: "putId"
+      parameters:
+      - name: "item"
+        required: true
+        in: "body"
+        schema:
+          $ref: "#/definitions/item"
+    delete:
+      responses:
+        200:
+          description: "200 OK"
+          schema:
+            type: "string"
+      operationId: "deleteId"
+      parameters:
+      - name: "id"
+        type: "integer"
+        required: true
+        in: "path"
+        format: "int32"
+  /items:
+    get:
+      responses:
+        200:
+          description: "200 OK"
+          schema:
+            $ref: "#/definitions/items"
+      operationId: "getItems"
+    post:
+      responses:
+        200:
+          description: "200 OK"
+          schema:
+            $ref: "#/definitions/items"
+      operationId: "postItems"
+      parameters:
+      - name: "body"
+        required: false
+        in: "body"
+        schema:
+          $ref: "#/definitions/items"
+        description: "{\"id\":999,\"name\":\"item999\",\"description\":\"\",\"price\"\
+          :999.99}"
+definitions:
+  item:
+    properties:
+      id:
+        type: "integer"
+        description: "unique id"
+        format: "int32"
+      name:
+        type: "string"
+        description: "item's name"
+      description:
+        type: "string"
+      price:
+        type: "number"
+        description: "item's price"
+        format: "float"
+      imgAlt:
+        type: "string"
+      img:
+        type: "string"
+      quantity:
+        type: "integer"
+        format: "int32"
+    additionalProperties: false
+    required:
+    - "price"
+    - "id"
+  items:
+    type: "array"
+    items:
+      $ref: "#/definitions/item"
+tags: []
+x-ibm-configuration:
+  enforced: true
+  testable: true
+  phase: "realized"
+  cors:
+    enabled: true
+  assembly:
+    execute:
+    - switch:
+        title: "switch"
+        case:
+        - condition: "((request.verb==='GET')&&(api.operation.path==='/login'))"
+          execute:
+          - map:
+              title: "map"
+              inputs:
+                username:
+                  schema:
+                    type: "string"
+                  variable: "request.parameters.username"
+                password:
+                  schema:
+                    type: "string"
+                  variable: "request.parameters.password"
+              outputs:
+                output:
+                  schema:
+                    type: "object"
+                    properties:
+                      options:
+                        type: "object"
+                        name: "options"
+                        properties:
+                          host:
+                            type: "string"
+                            name: "host"
+                          port:
+                            type: "integer"
+                            format: "int32"
+                            name: "port"
+                          bind-dn:
+                            type: "string"
+                            name: "bind-dn"
+                          bind-pass:
+                            type: "string"
+                            name: "bind-pass"
+                          user-base-dn:
+                            type: "string"
+                            name: "user-base-dn"
+                          attr-name:
+                            type: "string"
+                            name: "attr-name"
+                          proxy-profile:
+                            type: "string"
+                            name: "proxy-profile"
+                          filter:
+                            type: "string"
+                            name: "filter"
+                          password:
+                            type: "string"
+                            name: "password"
+                  variable: "message.body"
+                  content: "application/xml"
+              actions:
+              - set: "output.options.password"
+                from: "password"
+              - set: "output.options.filter"
+                from: "username"
+              version: "1.0.0"
+          - xslt:
+              title: "validate-ldap-user"
+              input: true
+              version: "1.0.0"
+              source: "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<!--\n *****************************************************\
+                \ {COPYRIGHT-TOP} ***\n* Licensed Materials - Property of IBM\n* 5725-L30\n\
+                *\n* (C) Copyright IBM Corporation 2014\n*\n* US Government Users\
+                \ Restricted Rights - Use, duplication, or\n* disclosure restricted\
+                \ by GSA ADP Schedule Contract with IBM Corp.\n **********************************************************\
+                \ {COPYRIGHT-END}***\n-->\n<xsl:stylesheet\n\t\tversion=\"1.0\"\n\t\
+                \txmlns:xsl=\"http://www.w3.org/1999/XSL/Transform\"\n\t\txmlns:dp=\"\
+                http://www.datapower.com/extensions\"\n\t\txmlns:apim=\"http://www.ibm.com/apimanagement\"\
+                \n\t\txmlns:webapi=\"http://www.ibm.com/webapi\"\n\t\txmlns:func=\"\
+                http://exslt.org/functions\"\n\t\textension-element-prefixes=\"dp\
+                \ apim\"\n\t\texclude-result-prefixes=\"dp\">\n\t<!-- Contains the\
+                \ APIM functions -->\n\t<xsl:include href=\"local:///isp/policy/apim.custom.xsl\"\
+                \ />\n\t<xsl:variable name=\"vTransactionID\" select=\"dp:variable('var://service/global-transaction-id')\"\
+                \ />\n\t<xsl:variable name=\"vURI\" select=\"dp:variable('var://service/URI')\"\
+                \ />\n\n\t<xsl:template match=\"/\">\n\t\t<xsl:message dp:priority=\"\
+                debug\">\n\t\t\t***Inbound_to_Stylesheet: <xsl:copy-of select=\".\"\
+                \ />\n\t\t</xsl:message>\n\n\t\t<!-- Constants -->\n\t\t<xsl:variable\
+                \ name=\"vLDAP\">\n\t\t\t<host>172.16.50.9</host>\n\t\t\t<bindDN>CN=admin,DC=csplab,DC=local</bindDN>\n\
+                \t\t\t<bindPass>brownuser01</bindPass>\n\t\t\t<lookupDN>DC=csplab,DC=local</lookupDN>\n\
+                \t\t</xsl:variable>\n\n\t\t<xsl:variable name=\"vLDAPAuthen\">\n\t\
+                \t\t<host>172.16.50.9</host>\n\t\t\t<bindDN>UID=airazabal,DC=csplab,DC=local</bindDN>\n\
+                \t\t\t<bindPass>Passw0rd!</bindPass>\n\t\t\t<lookupDN>DC=csplab,DC=local</lookupDN>\n\
+                \t\t</xsl:variable>\n\n\t\t<xsl:variable name=\"vPort\" select=\"\
+                '389'\" />\n\t\t<xsl:variable name=\"vAttribute\" select=\"'givenName,password,memberof,cn,distinguishedname,sn,dn'\"\
+                \ />\n\t\t<xsl:variable name=\"vSSLProfile\" select=\"'SSLProfile_SelfSigned'\"\
+                \ />\n\n\t\t<!-- Variables -->\n\t\t<xsl:variable name=\"vFilter\"\
+                \ select=\"concat('cn=',/options/filter)\" />\n\t\t<xsl:variable name=\"\
+                vPassword\" select=\"/options/password\"/>\n\n\t\t<!-- Query External\
+                \ LDAP -->\n\t\t<xsl:variable name=\"vLDAPSearchResults\"\n\t\t\t\t\
+                \t  select=\"dp:ldap-search($vLDAP/host,$vPort,$vLDAP/bindDN,$vLDAP/bindPass,$vLDAP/lookupDN,$vAttribute,$vFilter,'sub','','','v3')\"\
+                \ />\n\t\t<xsl:choose>\n\t\t\t<xsl:when test=\"count($vLDAPSearchResults/LDAP-search-results/result)\
+                \ = 1\">\n\t\t\t\t<xsl:variable name=\"vDN\" select=\"$vLDAPSearchResults/LDAP-search-results/result/DN/text()\"\
+                />\n\t\t\t\t<xsl:choose>\n\t\t\t\t\t<xsl:when test=\"not($vDN = '')\"\
+                >\n\t\t\t\t\t\t<xsl:message> LDAP Search: <xsl:copy-of select=\"$vLDAPSearchResults/*\"\
+                /></xsl:message>\n\t\t\t\t\t\t\n\t\t\t\t\t\t<!-- use the DN Found\
+                \  -->\n\t\t\t\t\t\t<xsl:message>Calling LDAP: DN\n\t\t\t\t\t\t\t\
+                <xsl:value-of select=\"$vDN\"/>\n\t\t\t\t\t\t</xsl:message>\n\t\t\t\
+                \t\t\t<xsl:variable name=\"vLDAPAuthResults\"\n\t\t\t\t\t\t\t\t\t\
+                \  select=\"dp:ldap-authen($vDN,$vPassword,concat($vLDAPAuthen/host,':',$vPort),'','','','v3')\"\
+                \ />\n\t\t\t\t\t\t<!--dp:ldap-authen(bindDN, bindPassword, serverAddress,\
+                \ sslProfileName, ldapLBGroup, \"\", ldapVersion, ldapReadTimeout)\n\
+                \t\t\t\t\t\tconcat(&apos;[&apos;, $AU/AUHost, &apos;]&apos;, &apos;:&apos;,\
+                \ $AU/AUPort)\n\t\t\t\t\t\t***External_Query: [<entry type=\"ldap\"\
+                >CN=Paris.Onell@7gmail.com,OU=ConsumerBusiness,OU=External,DC=aetheq,DC=aetnaeq,DC=com</entry>]-->\n\
+                \n\t\t\t\t\t\t<xsl:message dp:priority=\"debug\">\n\t\t\t\t\t\t\t\
+                ***External_Query: [<xsl:copy-of select=\"$vLDAPAuthResults\"/>]\n\
+                \t\t\t\t\t\t</xsl:message>\n\t\t\t\t\t\n\t\t\t\t\t\t<!-- If the results\
+                \ node comes back, it means LDAP query succesfully returned relavant\
+                \ content; out LDAP response. -->\n\t\t\t\t\t\t<xsl:if test=\"count($vLDAPAuthResults/entry[@type='ldap'])\
+                \ = 1\">\n\t\t\t\t\t\t\t<xsl:copy-of select=\"$vLDAPAuthResults\"\
+                />\n\t\t\t\t\t\t</xsl:if>\n\t\t\t\t\t\t<xsl:if test=\"count($vLDAPAuthResults/entry[@type='ldap'])\
+                \ != 1\">\n\t\t\t\t\t\t\t<xsl:message> <xsl:value-of select=\"webapi:error(401,401,$vLDAPAuthResults)\"\
+                /></xsl:message>\n\t\t\t\t\t\t</xsl:if>\n\t\t\t\t\t</xsl:when>\n\t\
+                \t\t\t\t<xsl:otherwise>\n\t\t\t\t\t\t<xsl:message> <xsl:value-of select=\"\
+                webapi:error(401,401,$vLDAPSearchResults)\"/></xsl:message>\n\t\t\t\
+                \t\t</xsl:otherwise>\n\t\t\t\t</xsl:choose>\n\t\t\t</xsl:when>\n\t\
+                \t<!-- If results of external LDAP query does not come back with results\
+                \ node, then throw exception. -->\n\t\t\t<xsl:otherwise>\n\t\t\t \
+                \   <xsl:choose>\n    \t\t\t    <xsl:when test=\"count($vLDAPSearchResults/LDAP-search-error)\
+                \ = 1\">\n    \t\t\t        <xsl:message>LDAP Search failed: <xsl:copy-of\
+                \ select=\"$vLDAPSearchResults\"/></xsl:message>\n    \t\t\t\t   \
+                \ <xsl:message> <xsl:value-of select=\"webapi:error(401,401,$vLDAPSearchResults)\"\
+                /></xsl:message>\n    \t\t\t\t</xsl:when>\n    \t\t\t\t<xsl:otherwise>\n\
+                \    \t\t\t\t\t<xsl:message> <xsl:value-of select=\"webapi:error(401,401,$vLDAPSearchResults)\"\
+                /></xsl:message>\n    \t\t\t\t</xsl:otherwise>\n    \t\t\t</xsl:choose>\n\
+                \t\t\t</xsl:otherwise>\n\t\t</xsl:choose>\n\t</xsl:template>\n\t<func:function\
+                \ name=\"webapi:error\">\n\t<xsl:param name=\"statusCode\"/>\n\t<xsl:param\
+                \ name=\"additionalStatusCode\"/>\n\t<xsl:param name=\"vLDAPSearchResults\"\
+                />\n\t<func:result>\n\t\t<xsl:variable name=\"output-error\">\n\t\t\
+                \t<status>\n\t\t\t\t<statusCode><xsl:value-of select=\"$statusCode\"\
+                /></statusCode>\n\t\t\t\t<detail>TransactionID: <xsl:value-of select=\"\
+                dp:variable('var://service/global-transaction-id')\"/> - LDAP Error.</detail>\n\
+                \t\t\t\t<severity>W</severity>\n\t\t\t\t<additionalStatus>\n\t\t\t\
+                \t\t<statusCode><xsl:value-of select=\"$additionalStatusCode\"/></statusCode>\n\
+                \t\t\t\t\t<serviceName>\n\t\t\t\t\t\t<xsl:value-of select=\"substring-before(dp:variable('var://service/URI'),'?')\"\
+                />\n\t\t\t\t\t</serviceName>\n\t\t\t\t\t<detail>\n\t\t\t\t\t\t<xsl:copy-of\
+                \ select=\"$vLDAPSearchResults/LDAP-search-error/error\"/>\n\t\t\t\
+                \t\t</detail>\n\t\t\t\t\t<severity>W</severity>\n\t\t\t\t</additionalStatus>\n\
+                \t\t\t</status>\n\t\t</xsl:variable>\n\t\t<xsl:message dp:priority=\"\
+                debug\"><xsl:copy-of select=\"$output-error\"/></xsl:message>\n\t\t\
+                <xsl:copy-of select=\"$output-error\"/>\n\t\t<xsl:call-template name=\"\
+                apim:output\">\n\t\t\t<xsl:with-param name=\"mediaType\" select=\"\
+                'application/xml'\" />\n\t\t</xsl:call-template>\n\t\t<dp:reject><xsl:copy-of\
+                \ select=\"$output-error\"/></dp:reject>\n\t</func:result>\n\t</func:function>\n\
+                </xsl:stylesheet>\n"
+          - gatewayscript:
+              title: "gatewayscript"
+              version: "1.0.0"
+              source: "var apim = require('./apim.custom.js');\n// var password =\
+                \ 'P6kY3lN1cV5fL8tF7mM1mT3xC4kL7rG0tU0gE1pL8eC0wN0vH8';\n// var password\
+                \ = 'bV0vK8xC4qG7uO8jP0hO1aG6eM6sC1aI6sP5sE6iL0wD8gU5hY';\nvar password\
+                \ = 'A1qJ7xU3gE7eF6xY0yX0bC2cL5kL7jQ0vC5qA7eD0lK4sK1yL7';\nvar username\
+                \ = apim.getvariable('client.app.id');\n// var password = apim.getvariable('client.app.secret');\n\
+                // clear out the message parameters\napim.setvariable('message.parameters.username','')\n\
+                apim.setvariable('message.parameters.password','')\nvar basic = 'Basic\
+                \ '+  Buffer(username + ':' + password).toString('base64');\napim.setvariable('message.headers.Authorization',\
+                \ basic);\nconsole.log('setting Auth header: '+apim.getvariable('message.headers.Authorization'))\n\
+                session.output.write('grant_type=client_credentials&scope=scope1')\n\
+                apim.output('application/x-www-form-urlencoded')"
+          - invoke:
+              title: "get Oauth Token"
+              timeout: 60
+              verb: "POST"
+              cache-response: "protocol"
+              cache-ttl: 900
+              version: "1.0.0"
+              description: "call the Oauth Provider API"
+              target-url: "https://$(api.endpoint.hostname)/$(api.org.name)/$(env.path)/oauth2/token"
+        - otherwise:
+          - invoke:
+              title: "invoke"
+              timeout: 60
+              verb: "keep"
+              cache-response: "protocol"
+              cache-ttl: 900
+              stop-on-error:
+              - null
+              version: "1.0.0"
+              target-url: "http://172.16.254.83:7800$(request.path)"
+        version: "1.0.0"
+    catch: []
+security:
+- {}
+securityDefinitions:
+  oauth:
+    type: "oauth2"
+    description: ""
+    flow: "application"
+    scopes:
+      scope1: ""
+    tokenUrl: "https://$(api.endpoint.hostname)/$(api.org.name)/$(env.path)/oauth2/token"
+  clientIdHeader:
+    type: "apiKey"
+    description: ""
+    in: "header"
+    name: "X-IBM-Client-Id"
