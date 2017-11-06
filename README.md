@@ -1,6 +1,8 @@
 # Inventory APIs
 
-This project is part of the 'IBM Hybrid Integration Reference Architecture' suite, available at [https://github.com/ibm-cloud-architecture/refarch-integration](https://github.com/ibm-cloud-architecture/refarch-integration) and addresses how we define an API product with IBM API Connect to integrate an existing SOA service for inventory management, and how to wrap a LDAP access via a `/login` url.
+This project is part of the 'IBM Hybrid Integration Reference Architecture' solution, available at https://github.com/ibm-cloud-architecture/refarch-integration. It addresses how we define an API product with IBM API Connect to integrate an existing SOA service for inventory management, and how to wrap a LDAP access via a `/login` url.
+
+The focus on APIs and API management has added a consumer centric aspect to the SOA notion of interface and service contract.
 
 ## Table of Contents
 * [Goals](https://github.com/ibm-cloud-architecture/refarch-integration-api#goals)
@@ -13,23 +15,25 @@ This project is part of the 'IBM Hybrid Integration Reference Architecture' suit
 * [Compendium](https://github.com/ibm-cloud-architecture/refarch-integration-api#compendium)
 
 ## Goals
-This project includes the definition for the inventory APIs used by the cloud native app, CASE Inc Portal, and the *blue compute* micro service and a set of guidance on how servers are configured and API definitions are done. We also detail TLS security settings.
+This project includes the definition for the inventory APIs used by the cloud native app, CASE Inc Portal, and the *blue compute* micro service. We are summarizing how servers are configured and API definitions are done. We also detail TLS security settings.
 
-The API definition exposes a set of RESTful services for managing a product inventory.
+The API definition exposes a set of RESTful services for managing the **inventory** API product. The product is defined within IBM API Connect as illustrated below:
+
 ![invprod](docs/inventory-product.png)  
 
 The API is defined and run on on-premise servers but exposed via secure connection to public cloud so born on cloud applications, like the simple [inventory app](https://github.com/ibm-cloud-architecture/refarch-caseinc-app), can leverage those APIs.
+In fact with the release of IBM Cloud private, you can also deploy API Connect gateway on ICP, and your 'cloud native' applications or micro services on ICP too. This will simplify the integration, security settings and will leverage monitoring.
 
 ## Architecture
-As illustrated in the figure below, the Inventory database is not directly accessed by application who needs it, but via a data access layer, SOA service, developed in Java using JAXWS and deployed on WebSphere Liberty server. The SOAP service is mapped by a gateway flow implemented in IBM Integration Bus, so API Connect can directly invoke the Gateway flow running in IIB.
+As illustrated in the figure below, the Inventory database is not directly accessed by application who needs it, but via a data access layer, SOA service, developed in Java using JAXWS and deployed on WebSphere Liberty server. The SOAP service is mapped by a gateway flow implemented in IBM Integration Bus, so API Connect can directly invoke the `gateway flow` running in IIB.
 
 ![Component view](docs/cp-phy-view1.png)  
 
-With the new programming model of consuming RESTful API for mobile app or web app born on cloud, existing SOAP interfaces need to be mapped to RESTful apis, and using a API economy paradigm, those APIs will become a product managed by IBM API connect. The *CASE Inc IT team* wants to cover their cost and exposing API may generate a revenue stream, so they defined a new API for inventory management.
+With the new programming model of consuming RESTful API for mobile app or web app born on cloud, existing SOAP interfaces need to be mapped to RESTful APIs, and using a API economy paradigm, those APIs will become a product managed by IBM API connect. The *CASE Inc IT team* wants to cover their cost and exposing API may generate a revenue stream, so they defined a new API for inventory management.
 
-Born on cloud web apps or micro services access the exposed RESTful API using a Bluemix Secure Gateway service (or VPN), which supports the API Connect destination definition. For detail on how the secure gateway was configured see [note](https://github.com/ibm-cloud-architecture/refarch-integration-utilities/blob/master/docs/ConfigureSecureGateway.md)
+When born on cloud web apps or micro services are deployed to public cloud, accessing the exposed RESTful API deployed on-premise enforce using security tunneling capabilities. On IBM Bluemix the Secure Gateway service (or VPN) is used and configured to support the API Connect destination definition. For detail on how the secure gateway was configured see [note](https://github.com/ibm-cloud-architecture/refarch-integration-utilities/blob/master/docs/ConfigureSecureGateway.md)
 
-The diagram below presents the item/{itemid} URL as defined in API Connect and that can be accessed via the secure gateway with a URL like: https://cap-sg-prd-5.integration.ibmcloud.com:16582/csplab/sb/iib-inventory-api/item/13403   
+The diagram below presents the **item/{itemid}** URL end point as defined in API Connect and that can be accessed via the secure gateway with a URL like: `https://cap-sg-prd-5.integration.ibmcloud.com:16582/csplab/sb/iib-inventory-api/item/13403`   
 
 ![](docs/item-id.png)
 
