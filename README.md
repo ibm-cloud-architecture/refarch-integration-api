@@ -15,14 +15,18 @@ The focus on APIs and API management has added a consumer centric aspect to the 
 * [Compendium](https://github.com/ibm-cloud-architecture/refarch-integration-api#compendium)
 
 ## Goals
-This project includes the definition for the inventory APIs used by the cloud native app, CASE Inc Portal, and the *blue compute* micro service. We are summarizing how servers are configured and API definitions are done. We also detail TLS security settings.
+This project includes the definition for the inventory APIs used by the cloud native app, CASE Inc Portal. We are summarizing how servers are configured and API definitions are done. We also detail TLS security settings.
 
-The API definition exposes a set of RESTful services for managing the **inventory** API product. The product is defined within IBM API Connect as illustrated below:
+We are defining a set of API product within the API Manager component:
+* the inventory API to manage the item of the inventory. The CRU operations are defined in the product. The back end end point exists and is defined in IIB. This API product is divided into interaction API and system API.
+* the supplier API to manage supplier party who deliver item to the inventory. This API is for back end, and the end point is also an IIB message flow.
+
+The API definition exposes a set of RESTful services which are consumed by the Web App: the case portal.
+
+The product is defined within IBM API Connect as illustrated below:
 
 ![invprod](docs/inventory-product.png)  
 
-The API is defined and run on on-premise servers but exposed via secure connection to public cloud so born on cloud applications, like the simple [inventory app](https://github.com/ibm-cloud-architecture/refarch-caseinc-app), can leverage those APIs.
-In fact with the release of IBM Cloud private, you can also deploy API Connect gateway on ICP, and your 'cloud native' applications or micro services on ICP too. This will simplify the integration, security settings and will leverage monitoring.
 
 ## Architecture
 As illustrated in the figure below, the Inventory database is not directly accessed by application who needs it, but via a data access layer, SOA service, developed in Java using JAXWS and deployed on WebSphere Liberty server. The SOAP service is mapped by a gateway flow implemented in IBM Integration Bus, so API Connect can directly invoke the `gateway flow` running in IIB.
@@ -89,7 +93,10 @@ It is possible to do the SOAP to REST mapping directly into API Connect, see [th
 ## Security
 The connection between the external application and API Connect Gateway is using TLS. For production environment you need to get a certificate from a certificate agency with the hostname of the API gateway server you deploy to. This certificate is used in IBM Secure gateway and any client code that needs to access the new exposed API. See the deep dive article on [TLS for Brown compute](https://github.com/ibm-cloud-architecture/refarch-integration/blob/master/docs/TLS.md)
 
-## Continuous Integration
+## Continuous Integration and Deployment
+The API is defined and run on on-premise servers but exposed via secure connection to public cloud so born on cloud applications, like the simple [inventory app](https://github.com/ibm-cloud-architecture/refarch-caseinc-app), can leverage those APIs.
+In fact with the release of IBM Cloud private, you can also deploy API Connect gateway on ICP, and your 'cloud native' applications or micro services on ICP too. This will simplify the integration, security settings and will leverage monitoring.
+
 Reusing the devops approach as describe in [this asset](https://github.com/ibm-cloud-architecture/refarch-hybridcloud-blueportal-api/blob/master/HybridDevOpsForAPIC.pdf) ....
 
 ## Cloud Service management
@@ -99,4 +106,5 @@ Using your own IBM API Connect instance import the [yaml](https://github.com/ibm
 
 ## Compendium
 * [API Connect product documentation](https://www.ibm.com/support/knowledgecenter/en/SSMNED_5.0.0/mapfiles/getting_started.html)
+* [Tutorial for working with API definitions that call an existing endpoint](https://www.ibm.com/support/knowledgecenter/en/SSMNED_5.0.0/com.ibm.apic.toolkit.doc/tutorial_cli_api_def_working.html)
 * [Developer center](https://developer.ibm.com/apiconnect/)
