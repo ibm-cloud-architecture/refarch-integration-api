@@ -1,8 +1,8 @@
 # Inventory APIs
 
-This project is part of the 'IBM Hybrid Integration Reference Architecture' solution, available at https://github.com/ibm-cloud-architecture/refarch-integration. It addresses how we define an API product with IBM API Connect to integrate an existing SOA service for inventory management, and how to wrap a LDAP access via a `/login` url.
+This project is part of the 'IBM Hybrid Integration Reference Architecture' solution, available at https://github.com/ibm-cloud-architecture/refarch-integration. It addresses how we define an API product with IBM API Connect to integrate an existing SOA service for inventory management, and how to wrap a LDAP access via a `/login` uri as defined in the API product.
 
-The focus on APIs and API management has added a consumer centric aspect to the SOA notion of interface and service contract.
+The focus on APIs and API management has added a consumer centric aspect to the SOA notion of interface and service contract. You can monitor the number of calls to API, control access rate and support different API versions.
 
 ## Table of Contents
 * [Goals](https://github.com/ibm-cloud-architecture/refarch-integration-api#goals)
@@ -17,29 +17,41 @@ The focus on APIs and API management has added a consumer centric aspect to the 
 ## Goals
 This project includes the definition for the inventory APIs used by the cloud native app, CASE Inc Portal. We are summarizing how servers are configured and API definitions are done. We also detail TLS security settings.
 
-We are defining a set of API product within the API Manager component:
+We are defining a set of API products within the API Manager component:
 * the inventory API to manage the item of the inventory. The CRU operations are defined in the product. The back end end point exists and is defined in IIB. This API product is divided into interaction API and system API.
 * the supplier API to manage supplier party who deliver item to the inventory. This API is for back end, and the end point is also an IIB message flow.
 
-The API definition exposes a set of RESTful services which are consumed by the Web App: the case portal.
+API definition exposes a set of RESTful services which are consumed by the [Case Web App](https://github.com/ibm-cloud-architecture/refarch-caseinc-app).
 
-The product is defined within IBM API Connect as illustrated below:
+The following diagram illustrates the API manager component used to define the product which may contain one to many plans. Plan defines the offerings on top of the APIs: for example the rate limits and cost are parameters of the offering. A plan belongs to a unique product. It may include multiple APIs, and API could be shared between product. The user can only subscribe to one Plan from a specific Product.
+
+![](docs/api-mgr-api.png)
+APIs are deployed to the gateway. The implementation of the API will be one to many backend applications. Here we present a single Java based micro service. Integration bus can be used to do interface mapping, service orchestration and mediation, in this case the API product will proxy the API to IIB mediation flow API. Within IIB the application is a REST API web service (See [IIB product documentation](https://www.ibm.com/support/knowledgecenter/SSMKHH_10.0.0/com.ibm.etools.mft.doc/bi12016_.htm)). As alternate you can develop the API implementation using the Loopback toolkit.
+
+Products are deployed to Catalog. Consumers of the API product need to subscribe to one of the plan available to them.
+In a typical configuration, an API provider organization uses a development Catalog for testing APIs under development and a production Catalog for hosting APIs that are ready for full use.
+
+The products (inventory api product) are defined within IBM API Connect - API manager component as illustrated below:
 
 ![invprod](docs/inventory-product.png)  
 
+API definition is done by using Swagger 2.0 specification.
 
 ## Architecture
-As illustrated in the figure below, the Inventory database is not directly accessed by application who needs it, but via a data access layer, SOA service, developed in Java using JAXWS and deployed on WebSphere Liberty server. The SOAP service is mapped by a gateway flow implemented in IBM Integration Bus, so API Connect can directly invoke the `gateway flow` running in IIB.
+As illustrated in the figure below, the Inventory database is not directly accessed by application who needs it, but via a data access layer, SOA service, developed in Java using JAXWS and deployed on WebSphere Liberty server. The SOAP service is mapped by a mediation flow implemented in IBM Integration Bus, so API Connect can directly invoke/ proxy this flow running in IIB.
 
 ![Component view](docs/cp-phy-view1.png)  
 
-With the new programming model of consuming RESTful API for mobile app or web app born on cloud, existing SOAP interfaces need to be mapped to RESTful APIs, and using a API economy paradigm, those APIs will become a product managed by IBM API connect. The *CASE Inc IT team* wants to cover their cost and exposing API may generate a revenue stream, so they defined a new API for inventory management.
+With the new programming model of consuming RESTful API for mobile app or web app born on cloud, existing SOAP interfaces need to be mapped to RESTful APIs, and using a API economy paradigm, those APIs become a product managed by IBM API connect. The *CASE Inc IT team* wants to cover their cost and exposing API may generate a revenue stream, so they defined a new API for inventory management.
 
-When born on cloud web apps or micro services are deployed to public cloud, accessing the exposed RESTful API deployed on-premise enforce using security tunneling capabilities. On IBM Bluemix the Secure Gateway service (or VPN) is used and configured to support the API Connect destination definition. For detail on how the secure gateway was configured see [note](https://github.com/ibm-cloud-architecture/refarch-integration-utilities/blob/master/docs/ConfigureSecureGateway.md)
+When cloud native web apps or micro services are deployed to public cloud, accessing the exposed RESTful API deployed on-premise enforce using security tunneling capabilities. On IBM Bluemix we have two choices: the Secure Gateway service or the VPN. For detail on how the secure gateway was configured see [note](https://github.com/ibm-cloud-architecture/refarch-integration-utilities/blob/master/docs/ConfigureSecureGateway.md)
 
-The diagram below presents the **item/{itemid}** URL end point as defined in API Connect and that can be accessed via the secure gateway with a URL like: `https://cap-sg-prd-5.integration.ibmcloud.com:16582/csplab/sb/iib-inventory-api/item/13403`   
+The diagram below presents the **item/{itemid}** URL end point as defined in API Connect and that can be accessed via the secure gateway with a URL like: `https://cap-sg-prd-5.integration.ibmcloud.com:16582/csplab/sb/iib-inventory-api/v1/item/13403`   
 
 ![](docs/item-id.png)
+
+The hostname and port number (**cap-sg-prd-5.integration.ibmcloud.com:16582**) are defined in the Secure Gateway. The URI path: `/csplab/sb` is the domain defined in the Gateway, and `iib-inventory-api/v1` is the API product name and API version.
+
 
 Here is an example of basic nodejs call that validates the integration is working:
 ```javascript
@@ -63,8 +75,9 @@ var req=request.get(
 ```
 
 ## Server configuration
-A non-high availability installation consists of installing 3 virtual servers: Management (mgmt), Portal, DataPower(DP) and gateway. To support high availability, a cluster installation just adds more servers, but the basic installation is the same. To achieve high availability you’ll need at a minimum 2 mgmt servers, 2 DataPower appliances, and 3 Portal servers.
-The configuration decision was to use only one server so we can quickly test resiliency and error reporting. The goal of *Hybrid integration compute* is not to validate on-premise HA, but more on the hybrid side.
+A non-high availability installation consists of installing 3 virtual servers: Management (mgmt), Portal, DataPower(DP) gateway. To achieve high availability you’ll need at least a minimum of 2 management servers, 2 DataPower gateways, and 3 Portal servers.
+
+For this solution the configuration decision was to use only one server for each component so we can quickly test resiliency and error reporting. The goal of *Hybrid integration compute* is not to validate API connect on-premise HA, but more how to support hybrid end to end.
 
 After the virtual OVA files are loaded, then you can refer here for each configuration:
 1. Mgmt -
@@ -82,7 +95,7 @@ https://www.ibm.com/support/knowledgecenter/en/SSMNED_5.0.0/com.ibm.apic.install
 
 * Add your API to a new Product and then create the API definition
 
-* Build a assembly like the figure below
+* Build an assembly like the figure below
 ![](docs/apic-iib-flow.png)
 
 * Specify the invoke parameters
@@ -102,9 +115,10 @@ Reusing the devops approach as describe in [this asset](https://github.com/ibm-c
 ## Cloud Service management
 
 ## How to leverage this asset
-Using your own IBM API Connect instance import the [yaml](https://github.com/ibm-cloud-architecture/refarch-integration-api/blob/master/apiconnect/sample-inventory-api_1.0.0.yaml) delivered in this project.
+Using your own IBM API Connect instance import the [yaml](https://github.com/ibm-cloud-architecture/refarch-integration-api/blob/master/apiconnect/iib-inventory-api_1.0.0.yaml) delivered in this project.
 
 ## Compendium
 * [API Connect product documentation](https://www.ibm.com/support/knowledgecenter/en/SSMNED_5.0.0/mapfiles/getting_started.html)
 * [Tutorial for working with API definitions that call an existing endpoint](https://www.ibm.com/support/knowledgecenter/en/SSMNED_5.0.0/com.ibm.apic.toolkit.doc/tutorial_cli_api_def_working.html)
 * [Developer center](https://developer.ibm.com/apiconnect/)
+* [IBM API Connect main page](https://www.ibm.com/cloud/api-connect)
