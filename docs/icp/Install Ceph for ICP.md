@@ -47,7 +47,7 @@ The following tasks are performed for setting up the Ceph Cluster.
 - [login.sh](./apic-install/login.sh) - Utility for logging onto IBM Cloud Private
 - [fixHelm.sh](./apic-install/apic/fixHelm.sh) - Utility to fix default helm to add --notls flag 
 - [helm](./apic-install/apic/helm) - New helm utility that appends --notls 
-- [ibm-rook-rbd-cluster-0.8.3.tgz](./apic-install/charts/ibm-rook-rbd-cluster-0.8.3.tgz) - IBM Chart for Rook RBD Cluster
+- [ibm-rook-rbd-cluster-0.8.3.tgz](https://raw.githubusercontent.com/IBM/charts/master/repo/stable/ibm-rook-rbd-cluster-0.8.3.tgz) - IBM Chart for Rook RBD Cluster
 - [ceph-values.yaml](./apic-install/ceph/ceph-values.yaml) - Sample values.yaml for installing Ceph Cluster 
 - [rook-ceph-cluster-role-binding.yaml](./apic-install/ceph/rook-ceph-cluster-role-binding.yaml) - ClusterRoleBinding for the service account rook-ceph-cluster
 - [rook-ceph-operator-values.yaml](./apic-install/ceph/rook-ceph-operator-values.yaml) - Sample values.yaml for installing rook operator
