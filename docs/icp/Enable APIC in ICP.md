@@ -53,6 +53,29 @@ The following tasks are performed for enabling IBM API Connect in IBM Cloud Priv
 10. [Login to the API Manager](#10-login-to-the-api-manager)
 11. [Login to the Developer Portal](#11-login-to-the-developer-portal)
 
+**NOTE:** Before executing the tasks listed above, it is critical to set the **VM Max Map count** size on all the IBM Cloud Private nodes. The **map_max_count** determines the maximum number of memory map areas a process can have. Docker requires that the max_map_count be substantially greater than the default (65530). The following commands can be run to set the VM Max count size.
+
+```
+echo 1048575 > /proc/sys/vm/max_map_count
+cat /proc/sys/vm/max_map_count
+sysctl -w vm.max_map_count=1048575
+```
+
+In order to have the `vm.max_map_count` carry over through a reboot, edit the `/etc/sysctl.conf` file and add a line to define the value:
+```
+vm.max_map_count=262144
+```
+or
+```
+echo "vm.max_map_count=1048575" >> /etc/sysctl.conf
+```
+
+If you want to see the value of a system control variable just use: `sysctl <name>`, e.g.,
+```
+sysctl vm.max_map_count
+```
+
+After verifying that VM Max Map count is correctly set on all worker nodes, you can begin the process to install and configure IBM API Connect on IBM Cloud Private.  
 
 ### 1. Download the required setup files
 
@@ -202,7 +225,7 @@ The screen shot having the output of the aforesaid script is listed below.
 
 ![](./images/createInstallProject.png)
 
-**Step #2**  The script [login.sh](./apic-install/login.sh) can be run to logon to the namespace **apiconnect**
+**Step #3**  The script [login.sh](./apic-install/login.sh) can be run to logon to the namespace **apiconnect**
 
 The screen shot having the output of the login script is listed below.
 
