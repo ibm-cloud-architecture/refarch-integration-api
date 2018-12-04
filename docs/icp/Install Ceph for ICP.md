@@ -295,3 +295,59 @@ The following command should run on all the worker nodes:
 ```
 rm -fr /var/lib/rook
 ```
+
+#  Ceph Cluster Management
+
+The following links has additional details on how to diagnose, troubleshoot, monitor and report Ceph cluster storage: 
+
+* [https://github.com/rook/rook/tree/master/Documentation](https://github.com/rook/rook/tree/master/Documentation)
+* [https://github.com/rook/rook/blob/master/Documentation/common-issues.md#troubleshooting-techniques](https://github.com/rook/rook/blob/master/Documentation/common-issues.md#troubleshooting-techniques)
+* [https://sysdig.com/blog/monitor-ceph-top-5-metrics-watch/](https://sysdig.com/blog/monitor-ceph-top-5-metrics-watch/)
+* [https://tracker.ceph.com/projects/ceph/wiki/10_Commands_Every_Ceph_Administrator_Should_Know](https://tracker.ceph.com/projects/ceph/wiki/10_Commands_Every_Ceph_Administrator_Should_Know)
+* [https://sabaini.at/pages/ceph-cheatsheet.html](https://sabaini.at/pages/ceph-cheatsheet.html)
+
+The *Ceph Monitor* pod can be attached using the following command:
+
+```
+kubectl -n rook-ceph exec -it $(kubectl -n rook-ceph get pod -l "app=rook-ceph-mon" -o jsonpath='{.items[0].metadata.name}') bash
+```
+
+After being attached to the *Ceph Monitor* pod, the following commands can be run which provides status and statistics of the *Ceph Cluster*.
+
+```
+ceph health 
+ceph status 
+ceph df 
+ceph osd stat
+ceph osd tree
+ceph osd df 
+ceph osd df tree
+ceph osd perf 
+ceph osd pool stats
+ceph osd status 
+ceph osd utilization
+ceph auth list 
+ceph quorum_status
+ceph mon_status
+ceph mon dump 
+ceph pg dump 
+ceph pg stat
+```
+
+The following link has details on how to add and remove Ceph storage: 
+
+* [https://github.com/rook/rook/blob/master/design/cluster-update.md](https://github.com/rook/rook/blob/master/design/cluster-update.md)
+
+The following link can be used as reference for backing up and restoring the images stored in the Ceph Pool. 
+
+* [https://nicksabine.com/post/ceph-backup/](https://nicksabine.com/post/ceph-backup/)
+
+Related commands are: 
+
+```
+rbd ls -p replicapool
+rbd export 
+rbd import 
+```
+
+The aforesaid commands can be run after being attached to the Ceph Monitor pod. 
