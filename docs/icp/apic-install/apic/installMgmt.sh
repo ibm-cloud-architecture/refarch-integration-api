@@ -8,6 +8,10 @@ BACKUP_HOST=XXXXX
 BACKUP_DIR=/home/XXXX/apicbackup 
 FTP_USER=XXXX
 FTP_PASS=XXXX
+# MODE can be set to standard for HA environment
+MODE=dev
+# CLUSTER_SIZE can be set to 3 for HA environment
+CLUSTER_SIZE=1
 
 cd ./$PROJECT_NAME
 
@@ -38,12 +42,12 @@ apicup subsys set mgmt cassandra-postmortems-port 22
 apicup subsys set mgmt cassandra-postmortems-path $BACKUP_DIR/cassandra-postmortems
 apicup subsys set mgmt cassandra-postmortems-auth-user $FTP_USER
 apicup subsys set mgmt cassandra-postmortems-auth-pass $FTP_PASS
+apicup subsys set mgmt cassandra-postmortems-schedule "0 0 * * *"
 apicup subsys set mgmt storage-class rbd-storage-class
 apicup subsys set mgmt mode dev
 
 # OPTIONAL: Write the configuration to an output file to inspect apicinstall/apiconnect-up.yaml prior to installation
 apicup subsys install mgmt --out mgmt-out --debug
-#apicup subsys install mgmt --plan-dir ./$PROJECT_NAME/mgmt-out
 
 # If output file is not used, enter command below to start the installation
 apicup subsys install mgmt --debug

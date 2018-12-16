@@ -5,6 +5,8 @@ PROJECT_NAME=apic41dev
 ANALYTICS_INGESTION_ENDPOINT=analytics-ingestion.DOMAIN_NAME
 ANALYTICS_CLIENT_ENDPOINT=analytics-client.DOMAIN_NAME
 CLUSTER_NAME=mycluster.icp
+# MODE can be set to standard for HA environment
+MODE=dev
 
 cd ./$PROJECT_NAME
 
@@ -23,11 +25,10 @@ apicup subsys set analyt data-storage-size-gb 200
 apicup subsys set analyt master-max-memory-gb 8
 apicup subsys set analyt master-storage-size-gb 5
 apicup subsys set analyt storage-class rbd-storage-class
-apicup subsys set analyt mode dev
+apicup subsys set analyt mode $MODE
 
 # OPTIONAL: Write the configuration to an output file to inspect apicinstall/apiconnect-up.yaml prior to installation
 apicup subsys install analyt --out analyt-out  --debug 
-#apicup subsys install analyt --plan-dir analyt-out  --debug
 
 # If output file is not used, enter command below to start the installation
 apicup subsys install analyt  --debug

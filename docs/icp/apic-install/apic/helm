@@ -1,2 +1,2 @@
 #!/bin/bash
-/usr/local/bin/helmICP $@ --tls
+/usr/local/bin/helmOrig $@ --tls

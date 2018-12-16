@@ -9,6 +9,8 @@ BACKUP_HOST=XXXXXX
 BACKUP_DIR=/home/XXXXX/apicbackup 
 FTP_USER=XXXXX
 FTP_PASS=XXXXX
+# MODE can be set to standard for HA environment
+MODE=dev
 
 cd ./$PROJECT_NAME
 
@@ -35,11 +37,10 @@ apicup subsys set ptl site-backup-auth-pass $FTP_PASS
 apicup subsys set ptl site-backup-path $BACKUP_DIR
 apicup subsys set ptl site-backup-protocol sftp
 apicup subsys set ptl site-backup-schedule "0 2 * * *"
-apicup subsys set ptl mode dev
+apicup subsys set ptl mode $MODE
 
 # OPTIONAL: Write the configuration to an output file to inspect apicinstall/apiconnect-up.yaml prior to installation
 apicup subsys install ptl --out ptl-out  --debug 
-#apicup subsys install ptl --plan-dir ptl-out  --debug
 
 # If output file is not used, enter command below to start the installation
 apicup subsys install ptl  --debug
