@@ -15,17 +15,31 @@ Rook turns storage software into self-managing, self-scaling, and self-healing s
 
 # Environment
 
-It is presumed that IBM Cloud Private cluster is already setup and there are at least three storage worker nodes available with an additional disk of 500 GB.
+A typical IBM Cloud Private Environment includes Boot node, Master node, Management node, Proxy node and Worker nodes. When the Ceph RBD Cluster is used for providing storage for API Connect, any three worker nodes should be configured to have additional raw disks.
 
-IBM Cloud Private cluster configuration is listed below:
+The following set of systems can be used as reference for building *development (non-HA) environment* that runs IBM API Connect workload on IBM Cloud Private.
 
 | Node type | Number of nodes | CPU | Memory (GB) | Disk (GB) |
 | :---: | :---: | :---: | :---: | :---: |
-|	Boot/Master	| 1	| 8	| 32 | 250 |
+|	Boot (FTP Server) | 1	| 8	| 32 | 2048 |
+|	Master	| 1	| 8	| 32 | 300 |
 |	Management | 1	| 8	| 32 | 300 |
-|	Proxy	| 1	| 4	| 16 | 250 |
-|	Worker/Storage | 4 | 8 | 32	| 250 + 500 |
-|	Total |	10	| 64| 256	| 3370 + 2000|
+|	Proxy	| 1	| 4	| 16 | 300 |
+|	Worker | 3 | 8 | 32	| 300+500(disk2)|
+|	Total |	7 | 52 | 208 | 3848+1500(disk2) |
+
+The following set of systems can be used as reference for building *production (HA) environment* that runs IBM API Connect workload on IBM Cloud Private.
+
+| Node type | Number of nodes | CPU | Memory (GB) | Disk (GB) |
+| :---: | :---: | :---: | :---: | :---: |
+|	Boot (FTP Server)	| 1	| 8	| 32 | 2048 |
+|	Master	| 3	| 8	| 32 | 300 |
+|	Management | 2	| 8	| 32 | 300 |
+|	Proxy	| 3	| 4	| 16 | 300 |
+|	Worker  | 3 | 8 | 32 | 300+750(disk2)|
+|	Total |	12	| 108| 432 | 5348+2250(disk2) |
+
+**NOTE:** Additional worker nodes will be required when there is a a need to run workloads other than IBM API Connect on IBM Cloud Private.
 
 # Setup
 
