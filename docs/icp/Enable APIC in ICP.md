@@ -125,12 +125,12 @@ The contents of the script [fixHelm.sh](./apic-install/fixHelm.sh) is as follows
 #
 
 #!/bin/bash
-FILE=/usr/local/bin/helmICP
+FILE=/usr/local/bin/helmOrig
 
 if [ ! -f "$FILE" ]
 then
     echo "File $FILE does not exist"
-    cp /usr/local/bin/helm /usr/local/bin/helmICP
+    cp /usr/local/bin/helm /usr/local/bin/helmOrig
     cp ./helm  /usr/local/bin/helm
 fi
 ```
@@ -295,6 +295,10 @@ BACKUP_HOST=XXXXX
 BACKUP_DIR=/home/XXXX/apicbackup 
 FTP_USER=XXXX
 FTP_PASS=XXXX
+# MODE can be set to standard for HA environment
+MODE=dev
+# CLUSTER_SIZE can be set to 3 for HA environment
+CLUSTER_SIZE=1
 
 cd ./$PROJECT_NAME
 
@@ -325,12 +329,12 @@ apicup subsys set mgmt cassandra-postmortems-port 22
 apicup subsys set mgmt cassandra-postmortems-path $BACKUP_DIR/cassandra-postmortems
 apicup subsys set mgmt cassandra-postmortems-auth-user $FTP_USER
 apicup subsys set mgmt cassandra-postmortems-auth-pass $FTP_PASS
+apicup subsys set mgmt cassandra-postmortems-schedule "0 0 * * *"
 apicup subsys set mgmt storage-class rbd-storage-class
 apicup subsys set mgmt mode dev
 
 # OPTIONAL: Write the configuration to an output file to inspect apicinstall/apiconnect-up.yaml prior to installation
 apicup subsys install mgmt --out mgmt-out --debug
-#apicup subsys install mgmt --plan-dir ./$PROJECT_NAME/mgmt-out
 
 # If output file is not used, enter command below to start the installation
 apicup subsys install mgmt --debug
@@ -354,51 +358,36 @@ The contents of the script [installAnalytics.sh](./apic-install/apic/installAnal
 # UPDATE VARIABLES TO MATCH THE ENVIRONMENT
 #
 PROJECT_NAME=apic41dev
-APIC_MGMT_ENDPOINT=management.DOMAIN_NAME
+ANALYTICS_INGESTION_ENDPOINT=analytics-ingestion.DOMAIN_NAME
+ANALYTICS_CLIENT_ENDPOINT=analytics-client.DOMAIN_NAME
 CLUSTER_NAME=mycluster.icp
-BACKUP_HOST=XXXXX
-BACKUP_DIR=/home/XXXX/apicbackup 
-FTP_USER=XXXX
-FTP_PASS=XXXX
+# MODE can be set to standard for HA environment
+MODE=dev
 
 cd ./$PROJECT_NAME
 
-# Setup management subsystem
-echo "Set management system properties"
-echo 
-apicup subsys create mgmt management --k8s
-apicup subsys set mgmt create-crd true
-apicup subsys set mgmt platform-api   $APIC_MGMT_ENDPOINT
-apicup subsys set mgmt api-manager-ui $APIC_MGMT_ENDPOINT
-apicup subsys set mgmt cloud-admin-ui $APIC_MGMT_ENDPOINT
-apicup subsys set mgmt consumer-api   $APIC_MGMT_ENDPOINT
-apicup subsys set mgmt namespace apiconnect
-apicup subsys set mgmt registry $CLUSTER_NAME:8500/apiconnect/
-apicup subsys set mgmt registry-secret apiconnect-icp-secret
-apicup subsys set mgmt cassandra-max-memory-gb 16
-apicup subsys set mgmt cassandra-cluster-size 1
-apicup subsys set mgmt cassandra-volume-size-gb 16
-apicup subsys set mgmt cassandra-backup-host $BACKUP_HOST 
-apicup subsys set mgmt cassandra-backup-protocol sftp
-apicup subsys set mgmt cassandra-backup-port 22
-apicup subsys set mgmt cassandra-backup-path $BACKUP_DIR/cassandra
-apicup subsys set mgmt cassandra-backup-auth-user  $FTP_USER
-apicup subsys set mgmt cassandra-backup-auth-pass  $FTP_PASS
-apicup subsys set mgmt cassandra-backup-schedule "0 0 * * *"
-apicup subsys set mgmt cassandra-postmortems-host $BACKUP_HOST 
-apicup subsys set mgmt cassandra-postmortems-port 22
-apicup subsys set mgmt cassandra-postmortems-path $BACKUP_DIR/cassandra-postmortems
-apicup subsys set mgmt cassandra-postmortems-auth-user $FTP_USER
-apicup subsys set mgmt cassandra-postmortems-auth-pass $FTP_PASS
-apicup subsys set mgmt storage-class rbd-storage-class
-apicup subsys set mgmt mode dev
+# Seup analytics subsystem
+echo "Set analytics system properties"
+echo
+apicup subsys create analyt analytics --k8s
+apicup subsys set analyt analytics-ingestion $ANALYTICS_INGESTION_ENDPOINT
+apicup subsys set analyt analytics-client    $ANALYTICS_CLIENT_ENDPOINT
+apicup subsys set analyt namespace apiconnect
+apicup subsys set analyt registry $CLUSTER_NAME:8500/apiconnect
+apicup subsys set analyt registry-secret apiconnect-icp-secret
+apicup subsys set analyt coordinating-max-memory-gb 6
+apicup subsys set analyt data-max-memory-gb 6
+apicup subsys set analyt data-storage-size-gb 200
+apicup subsys set analyt master-max-memory-gb 8
+apicup subsys set analyt master-storage-size-gb 5
+apicup subsys set analyt storage-class rbd-storage-class
+apicup subsys set analyt mode $MODE
 
 # OPTIONAL: Write the configuration to an output file to inspect apicinstall/apiconnect-up.yaml prior to installation
-apicup subsys install mgmt --out mgmt-out --debug
-#apicup subsys install mgmt --plan-dir ./$PROJECT_NAME/mgmt-out
+apicup subsys install analyt --out analyt-out  --debug 
 
 # If output file is not used, enter command below to start the installation
-apicup subsys install mgmt --debug
+apicup subsys install analyt  --debug
 
 cd ..
 ```
@@ -422,6 +411,10 @@ PROJECT_NAME=apic41dev
 GATEWAY_ENDPOINT=gateway.DOMAIN_NAME
 GATEWAY_DIRECTOR_ENDPOINT=gateway-director.DOMAIN_NAME
 CLUSTER_NAME=mycluster.icp
+# MODE can be set to standard for HA environment
+MODE=dev
+# CLUSTER_SIZE can be set to 3 for HA environment
+CLUSTER_SIZE=1
 
 cd ./$PROJECT_NAME
  
@@ -436,17 +429,16 @@ apicup subsys set gwy registry-secret apiconnect-icp-secret
 apicup subsys set gwy image-repository ibmcom/datapower
 apicup subsys set gwy image-tag "latest"
 apicup subsys set gwy image-pull-policy Always
-apicup subsys set gwy replica-count 3
+apicup subsys set gwy replica-count $CLUSTER_SIZE
 apicup subsys set gwy max-cpu 4
 apicup subsys set gwy max-memory-gb 6
 apicup subsys set gwy storage-class rbd-storage-class
 apicup subsys set gwy v5-compatibility-mode true 
 apicup subsys set gwy enable-tms false
-apicup subsys set gwy mode dev
+apicup subsys set gwy mode $MODE
 
 #OPTIONAL: Write the configuration to an output file to inspect apicinstall/apiconnect-up.yaml prior to installation
 apicup subsys install gwy --out gwy-out  --debug 
-#apicup subsys install gwy --plan-dir gwy-out  --debug
 
 #If output file is not used, enter command below to start the installation
 apicup subsys install gwy  --debug
@@ -477,6 +469,8 @@ BACKUP_HOST=XXXXXX
 BACKUP_DIR=/home/XXXXX/apicbackup 
 FTP_USER=XXXXX
 FTP_PASS=XXXXX
+# MODE can be set to standard for HA environment
+MODE=dev
 
 cd ./$PROJECT_NAME
 
@@ -503,11 +497,10 @@ apicup subsys set ptl site-backup-auth-pass $FTP_PASS
 apicup subsys set ptl site-backup-path $BACKUP_DIR
 apicup subsys set ptl site-backup-protocol sftp
 apicup subsys set ptl site-backup-schedule "0 2 * * *"
-apicup subsys set ptl mode dev
+apicup subsys set ptl mode $MODE
 
 # OPTIONAL: Write the configuration to an output file to inspect apicinstall/apiconnect-up.yaml prior to installation
 apicup subsys install ptl --out ptl-out  --debug 
-#apicup subsys install ptl --plan-dir ptl-out  --debug
 
 # If output file is not used, enter command below to start the installation
 apicup subsys install ptl  --debug
