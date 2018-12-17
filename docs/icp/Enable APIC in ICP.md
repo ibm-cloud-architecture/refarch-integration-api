@@ -5,37 +5,48 @@ Enabling IBM API Connect on IBM Cloud Private Version 3.1
 
 This document provides guidance for installing **IBM API Connect v2018.4.1** on **IBM Cloud Private Version 3.1**. Also, it covers the topic of using all the components of IBM API Connect and tips for troubleshooting issues.
 
-This document presumes that following two main pre-requisites are completed in the environment. 
+This document presumes that following two main pre-requisites are completed in the environment.
 
 * Setting up IBM Cloud Private cluster
 
   + [Install and Configure IBM Cloud Private cluster](https://www.ibm.com/support/knowledgecenter/en/SSBS6K_3.1.0/installing/install_containers.html)
 
-* Setting up storage for IBM API Connect 
+* Setting up storage for IBM API Connect
 
   + [Install and Configure Ceph on IBM Cloud Private](./Install%20Ceph%20for%20ICP.md)  
 
 Once the pre-requisites are complete, this document can be used as a reference for setting up IBM API Connect environment in IBM Cloud Private.
 
-**Note:** The storage options **GlusterFS** and **NFS** are NOT supported. **Ceph RBD Cluster** is used as reference storage provider. 
+**Note:** The storage options **GlusterFS** and **NFS** are NOT supported. **Ceph RBD Cluster** is used as reference storage provider.
 
 
 # Environment
 
-A typical IBM Cloud Private Environment includes Boot/Master node, Management node, Proxy node and Worker Nodes. When the Ceph RBD Cluster is used for providing storage for API Connect, any three worker nodes should be configured to have additional raw disks.
+A typical IBM Cloud Private Environment includes Boot node, Master node, Management node, Proxy node and Worker nodes. When the Ceph RBD Cluster is used for providing storage for API Connect, any three worker nodes should be configured to have additional raw disks.
 
-The following set of systems are used in building an environment that runs IBM API Connect on IBM Cloud Private.
+The following set of systems can be used as reference for building *development (non-HA) environment* that runs IBM API Connect workload on IBM Cloud Private.
 
 | Node type | Number of nodes | CPU | Memory (GB) | Disk (GB) |
 | :---: | :---: | :---: | :---: | :---: |
-|	Boot/Master	| 1	| 8	| 32 | 250 |
+|	Boot (FTP Server) | 1	| 8	| 32 | 2048 |
+|	Master	| 1	| 8	| 32 | 300 |
 |	Management | 1	| 8	| 32 | 300 |
-|	Proxy	| 1	| 4	| 16 | 250 |
-|	Worker/Storage | 4 | 8 | 32	| 250 + 500 |
-|	Total |	10	| 64| 256	| 3370 + 2000 |
+|	Proxy	| 1	| 4	| 16 | 300 |
+|	Worker | 3 | 8 | 32	| 300+500(disk2)|
+|	Total |	7 | 52 | 208 | 3848+1500(disk2) |
 
-**Note:** It is very critical to have minimum 4 worker nodes having **8 cores** and **32 GB RAM** is made available running IBM API Connect in IBM Cloud Private.
+The following set of systems can be used as reference for building *production (HA) environment* that runs IBM API Connect workload on IBM Cloud Private.
 
+| Node type | Number of nodes | CPU | Memory (GB) | Disk (GB) |
+| :---: | :---: | :---: | :---: | :---: |
+|	Boot (FTP Server)	| 1	| 8	| 32 | 2048 |
+|	Master	| 3	| 8	| 32 | 300 |
+|	Management | 2	| 8	| 32 | 300 |
+|	Proxy	| 3	| 4	| 16 | 300 |
+|	Worker  | 3 | 8 | 32 | 300+750(disk2)|
+|	Total |	12	| 108| 432 | 5348+2250(disk2) |
+
+**NOTE:** Additional worker nodes will be required when there is a a need to run workloads other than IBM API Connect on IBM Cloud Private.
 
 # Setup
 
@@ -79,16 +90,16 @@ After verifying that VM Max Map count is correctly set on all worker nodes, you 
 
 ### 1. Download the required setup files
 
-**Note:** The following files are required for installing IBM API Connect in IBM Cloud Private. 
+**Note:** The following files are required for installing IBM API Connect in IBM Cloud Private.
 
 - [login.sh](./apic-install/login.sh) - Utility for logging onto IBM Cloud Private
-- [fixHelm.sh](./apic-install/apic/fixHelm.sh) - Utility to fix default helm to add --notls flag 
-- [helm](./apic-install/apic/helm) - New helm utility that appends --notls 
+- [fixHelm.sh](./apic-install/apic/fixHelm.sh) - Utility to fix default helm to add --notls flag
+- [helm](./apic-install/apic/helm) - New helm utility that appends --notls
 - [setup.sh](./apic-install/apic/setup.sh) - Utility for setting up IBM API Connect
 - [apiconnect-user.yaml](./apic-install/apic/apiconnect-user.yaml) - Metadata for creating a service account
 - [loadimages.sh](./apic-install/apic/loadimages.sh) - Utility for loading all images of IBM API Connect
 - [createProject.sh](./apic-install/apic/createProject.sh) - Utility for creating project to store install files
-- [getapicinfo.sh](./apic-install/apic/getapicinfo.sh) -  Utility to get details of the API Connect subsystem 
+- [getapicinfo.sh](./apic-install/apic/getapicinfo.sh) -  Utility to get details of the API Connect subsystem
 - [installMgmt.sh](./apic-install/apic/installMgmt.sh) - Utility for installing Management subsystem
 - [installAnalytics.sh](./apic-install/apic/installAnalytics.sh) - Utility for installing Analytics subsystem
 - [installGateway.sh](./apic-install/apic/installGateway.sh) - Utility for installing Gateway subsystem
@@ -115,13 +126,13 @@ The following is the list of IBM API Connect images included in the archive file
 
 ### 2. Logon to IBM Cloud Private Cluster
 
-**Step #1**  The script [fixHelm.sh](./apic-install/fixHelm.sh) can be run to enable helm to suffix **--tls** when running a command. 
+**Step #1**  The script [fixHelm.sh](./apic-install/fixHelm.sh) can be run to enable helm to suffix **--tls** when running a command.
 
-The contents of the script [fixHelm.sh](./apic-install/fixHelm.sh) is as follows: 
+The contents of the script [fixHelm.sh](./apic-install/fixHelm.sh) is as follows:
 
 ```
 #
-# Run this script only once 
+# Run this script only once
 #
 
 #!/bin/bash
@@ -134,13 +145,13 @@ then
     cp ./helm  /usr/local/bin/helm
 fi
 ```
-Sample run of the fixHelm script is as follows: 
+Sample run of the fixHelm script is as follows:
 
 ![](./images/fixHelmTLSIssue.png)
 
-**Step #2**  The script [login.sh](./apic-install/login.sh) can be run to login to IBM Cloud Private Cluster. 
+**Step #2**  The script [login.sh](./apic-install/login.sh) can be run to login to IBM Cloud Private Cluster.
 
-The contents of the script [login.sh](./apic-install/login.sh) is as follows: 
+The contents of the script [login.sh](./apic-install/login.sh) is as follows:
 
 ```
 #
@@ -151,11 +162,11 @@ The contents of the script [login.sh](./apic-install/login.sh) is as follows:
 CLUSTER_NAME=mycluster.icp
 
 echo 'Logging onto IBM Cloud Private CLI'
-echo 
+echo
 cloudctl login -a https://$CLUSTER_NAME:8443 --skip-ssl-validation
 
 echo 'Logging onto Docker Registry'
-echo 
+echo
 docker login $CLUSTER_NAME:8500
 
 echo 'Initializing Helm'
@@ -166,7 +177,7 @@ helm version
 
 **Note:**  The script should be updated to include the correct value for *CLUSTER_NAME*.
 
-Sample run of the login script is as follows: 
+Sample run of the login script is as follows:
 
 ![](./images/loginToDefaultNamespace.png)
 
@@ -175,7 +186,7 @@ Sample run of the login script is as follows:
 
 **Step #1**  The script [setup.sh](./apic-install/apic/setup.sh) can be run to setup artifacts in IBM Cloud Private
 
-The contents of the script [setup.sh](./apic-install/apic/setup.sh) is as follows: 
+The contents of the script [setup.sh](./apic-install/apic/setup.sh) is as follows:
 
 ```
 #
@@ -190,7 +201,7 @@ CLUSTER_EMAIL=admin@DOMAIN_NAME
 
 # Create namespace
 kubectl create namespace apiconnect
-kubectl apply -f apiconnect-user.yaml -n apiconnect 
+kubectl apply -f apiconnect-user.yaml -n apiconnect
 
 # Create secrets
 kubectl create secret docker-registry apiconnect-icp-secret --docker-server=$CLUSTER_NAME:8500 --docker-username=$CLUSTER_ADMIN --docker-password=$CLUSTER_PWD --docker-email=$CLUSTER_EMAIL --namespace apiconnect
@@ -202,9 +213,9 @@ The screen shot having the output of the aforesaid commands is listed below.
 
 ![](./images/runAPICSetup.png)
 
-**Step #2**  The script [createProject.sh](./apic-install/apic/createProject.sh) can be run to setup sandbox to trigger Install Assist commands. 
+**Step #2**  The script [createProject.sh](./apic-install/apic/createProject.sh) can be run to setup sandbox to trigger Install Assist commands.
 
-The contents of the script [createProject.sh](./apic-install/apic/createProject.sh) is as follows: 
+The contents of the script [createProject.sh](./apic-install/apic/createProject.sh) is as follows:
 
 ```
 #
@@ -216,7 +227,7 @@ apicup version
 
 mkdir ./$PROJECT_NAME
 apicup init $PROJECT_NAME
-echo 
+echo
 ```
 
 **Note:**  The script should be updated to include the correct values for *PROJECT_NAME*.
@@ -236,16 +247,16 @@ The screen shot having the output of the login script is listed below.
 
 The script [loadimages.sh](./apic-install/apic/loadimages.sh) can be run to load API Connect images
 
-The contents of the script [loadimages.sh](./apic-install/apic/loadimages.sh) is as follows: 
+The contents of the script [loadimages.sh](./apic-install/apic/loadimages.sh) is as follows:
 
 ```
 #
 # UPDATE VARIABLES TO MATCH THE ENVIRONMENT
 #
 
-# Define cluster name 
+# Define cluster name
 CLUSTER_NAME=mycluster.icp
-# Define the location of images 
+# Define the location of images
 IMAGE_DIR=/DIRECTORY_HAVING_IMAGES
 
 # Load PPA Archives
@@ -258,9 +269,9 @@ cloudctl catalog load-ppa-archive --archive $IMAGE_DIR/portal-images-icp.tgz --r
 
 **Note:**  The script should be updated to include the correct values for *CLUSTER_NAME* and *IMAGE_DIR*.
 
-Sample log is attached for reference. 
+Sample log is attached for reference.
 
-- [management_install.log](./apic-install/samples/images_load.log) 
+- [management_install.log](./apic-install/samples/images_load.log)
 
 
 The following commands can be used to verify if the images are loaded correctly.
@@ -282,7 +293,7 @@ If required, the following utility can be run to delete all the images within th
 
 **Step #1**  The script [installMgmt.sh](./apic-install/apic/installMgmt.sh) can be run to install API Manager.
 
-The contents of the script [installMgmt.sh](./apic-install/apic/installMgmt.sh) is as follows: 
+The contents of the script [installMgmt.sh](./apic-install/apic/installMgmt.sh) is as follows:
 
 ```
 #
@@ -292,7 +303,7 @@ PROJECT_NAME=apic41dev
 APIC_MGMT_ENDPOINT=management.DOMAIN_NAME
 CLUSTER_NAME=mycluster.icp
 BACKUP_HOST=XXXXX
-BACKUP_DIR=/home/XXXX/apicbackup 
+BACKUP_DIR=/home/XXXX/apicbackup
 FTP_USER=XXXX
 FTP_PASS=XXXX
 # MODE can be set to standard for HA environment
@@ -304,7 +315,7 @@ cd ./$PROJECT_NAME
 
 # Setup management subsystem
 echo "Set management system properties"
-echo 
+echo
 apicup subsys create mgmt management --k8s
 apicup subsys set mgmt create-crd true
 apicup subsys set mgmt platform-api   $APIC_MGMT_ENDPOINT
@@ -317,14 +328,14 @@ apicup subsys set mgmt registry-secret apiconnect-icp-secret
 apicup subsys set mgmt cassandra-max-memory-gb 16
 apicup subsys set mgmt cassandra-cluster-size 1
 apicup subsys set mgmt cassandra-volume-size-gb 16
-apicup subsys set mgmt cassandra-backup-host $BACKUP_HOST 
+apicup subsys set mgmt cassandra-backup-host $BACKUP_HOST
 apicup subsys set mgmt cassandra-backup-protocol sftp
 apicup subsys set mgmt cassandra-backup-port 22
 apicup subsys set mgmt cassandra-backup-path $BACKUP_DIR/cassandra
 apicup subsys set mgmt cassandra-backup-auth-user  $FTP_USER
 apicup subsys set mgmt cassandra-backup-auth-pass  $FTP_PASS
 apicup subsys set mgmt cassandra-backup-schedule "0 0 * * *"
-apicup subsys set mgmt cassandra-postmortems-host $BACKUP_HOST 
+apicup subsys set mgmt cassandra-postmortems-host $BACKUP_HOST
 apicup subsys set mgmt cassandra-postmortems-port 22
 apicup subsys set mgmt cassandra-postmortems-path $BACKUP_DIR/cassandra-postmortems
 apicup subsys set mgmt cassandra-postmortems-auth-user $FTP_USER
@@ -344,14 +355,14 @@ cd ..
 
 **Note:**  The script should be updated to include the correct values for *PROJECT_NAME*, *APIC_MGMT_ENDPOINT*, *CLUSTER_NAME*, *BACKUP_HOST*, *BACKUP_DIR*, *FTP_USER* and *FTP_PASS*
 
-Sample install Log is attached for reference. 
+Sample install Log is attached for reference.
 
-- [management_install.log](./apic-install/samples/management_install.log) 
+- [management_install.log](./apic-install/samples/management_install.log)
 
 
 **Step #2**  The script [installAnalytics.sh](./apic-install/apic/installAnalytics.sh) can be run to install Analytics.
 
-The contents of the script [installAnalytics.sh](./apic-install/apic/installAnalytics.sh) is as follows: 
+The contents of the script [installAnalytics.sh](./apic-install/apic/installAnalytics.sh) is as follows:
 
 ```
 #
@@ -384,7 +395,7 @@ apicup subsys set analyt storage-class rbd-storage-class
 apicup subsys set analyt mode $MODE
 
 # OPTIONAL: Write the configuration to an output file to inspect apicinstall/apiconnect-up.yaml prior to installation
-apicup subsys install analyt --out analyt-out  --debug 
+apicup subsys install analyt --out analyt-out  --debug
 
 # If output file is not used, enter command below to start the installation
 apicup subsys install analyt  --debug
@@ -394,14 +405,14 @@ cd ..
 
 **Note:**  The script should be updated to include the correct values for *PROJECT_NAME*, *APIC_MGMT_ENDPOINT*, *CLUSTER_NAME*, *BACKUP_HOST*, *BACKUP_DIR*, *FTP_USER* and *FTP_PASS*
 
-Sample install Log is attached for reference. 
+Sample install Log is attached for reference.
 
-- [analytics_install.log](./apic-install/samples/analytics_install.log) 
+- [analytics_install.log](./apic-install/samples/analytics_install.log)
 
 
 **Step #3**  The script [installGateway.sh](./apic-install/apic/installGateway.sh) can be run to install Gateway.
 
-The contents of the script [installGateway.sh](./apic-install/apic/installGateway.sh) is as follows: 
+The contents of the script [installGateway.sh](./apic-install/apic/installGateway.sh) is as follows:
 
 ```
 #
@@ -417,12 +428,12 @@ MODE=dev
 CLUSTER_SIZE=1
 
 cd ./$PROJECT_NAME
- 
+
 # Setup gateway subsystem
 echo "Set gateway system properties"
 echo
 apicup subsys create gwy gateway --k8s
-apicup subsys set gwy api-gateway $GATEWAY_ENDPOINT 
+apicup subsys set gwy api-gateway $GATEWAY_ENDPOINT
 apicup subsys set gwy apic-gw-service $GATEWAY_DIRECTOR_ENDPOINT
 apicup subsys set gwy namespace apiconnect
 apicup subsys set gwy registry-secret apiconnect-icp-secret
@@ -433,12 +444,12 @@ apicup subsys set gwy replica-count $CLUSTER_SIZE
 apicup subsys set gwy max-cpu 4
 apicup subsys set gwy max-memory-gb 6
 apicup subsys set gwy storage-class rbd-storage-class
-apicup subsys set gwy v5-compatibility-mode true 
+apicup subsys set gwy v5-compatibility-mode true
 apicup subsys set gwy enable-tms false
 apicup subsys set gwy mode $MODE
 
 #OPTIONAL: Write the configuration to an output file to inspect apicinstall/apiconnect-up.yaml prior to installation
-apicup subsys install gwy --out gwy-out  --debug 
+apicup subsys install gwy --out gwy-out  --debug
 
 #If output file is not used, enter command below to start the installation
 apicup subsys install gwy  --debug
@@ -448,14 +459,14 @@ cd ..
 
 **Note:**  The script should be updated to include the correct values for *PROJECT_NAME*, *GATEWAY_ENDPOINT*, *GATEWAY_DIRECTOR_ENDPOINT* and *CLUSTER_NAME*.
 
-Sample install Log is attached for reference. 
+Sample install Log is attached for reference.
 
-- [gateway_install.log](./apic-install/samples/gateway_install.log) 
+- [gateway_install.log](./apic-install/samples/gateway_install.log)
 
 
 **Step #4**  The script [installPortal.sh](./apic-install/apic/installPortal.sh) can be run to install Portal.
 
-The contents of the script [installPortal.sh](./apic-install/apic/installPortal.sh) is as follows: 
+The contents of the script [installPortal.sh](./apic-install/apic/installPortal.sh) is as follows:
 
 ```
 #
@@ -466,7 +477,7 @@ PORTAL_ADMIN_ENDPOINT=portal-admin.DOMAIN_NAME
 PORTAL_ENDPOINT=portal.DOMAIN_NAME
 CLUSTER_NAME=mycluster.icp
 BACKUP_HOST=XXXXXX
-BACKUP_DIR=/home/XXXXX/apicbackup 
+BACKUP_DIR=/home/XXXXX/apicbackup
 FTP_USER=XXXXX
 FTP_PASS=XXXXX
 # MODE can be set to standard for HA environment
@@ -482,14 +493,14 @@ apicup subsys set ptl portal-admin $PORTAL_ADMIN_ENDPOINT
 apicup subsys set ptl portal-www $PORTAL_ENDPOINT
 apicup subsys set ptl namespace apiconnect
 apicup subsys set ptl registry $CLUSTER_NAME:8500/apiconnect
-apicup subsys set ptl registry-secret apiconnect-icp-secret 
+apicup subsys set ptl registry-secret apiconnect-icp-secret
 apicup subsys set ptl storage-class rbd-storage-class
 apicup subsys set ptl www-storage-size-gb 5
 apicup subsys set ptl backup-storage-size-gb 5
 apicup subsys set ptl db-storage-size-gb 12
 apicup subsys set ptl db-logs-storage-size-gb 2
 apicup subsys set ptl admin-storage-size-gb 1
-apicup subsys set ptl site-backup-host $BACKUP_HOST 
+apicup subsys set ptl site-backup-host $BACKUP_HOST
 apicup subsys set ptl site-backup-port 22
 apicup subsys set ptl site-backup-path $BACKUP_DIR
 apicup subsys set ptl site-backup-auth-user $FTP_USER
@@ -500,7 +511,7 @@ apicup subsys set ptl site-backup-schedule "0 2 * * *"
 apicup subsys set ptl mode $MODE
 
 # OPTIONAL: Write the configuration to an output file to inspect apicinstall/apiconnect-up.yaml prior to installation
-apicup subsys install ptl --out ptl-out  --debug 
+apicup subsys install ptl --out ptl-out  --debug
 
 # If output file is not used, enter command below to start the installation
 apicup subsys install ptl  --debug
