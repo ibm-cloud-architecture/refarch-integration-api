@@ -14,13 +14,6 @@ consumes:
   - application/json
 security: []
 securityDefinitions:
-  oauth:
-    type: oauth2
-    description: ''
-    flow: application
-    scopes:
-      class: admin
-    tokenUrl: 'https://192.168.225.52/sales/sandbox/sales/oauth2/token'
   clientIdHeader:
     type: apiKey
     in: header
@@ -65,41 +58,6 @@ x-ibm-configuration:
 tags:
   - name: artificial
     description: artificial
-definitions:
-  inputPayload:
-    description: ''
-    type: object
-    properties:
-      ConsumerLoansRequest:
-        type: array
-        items:
-          properties:
-            loanAccountNumber:
-              type: string
-            fiCode:
-              type: string
-            loanType:
-              type: string
-    example: |-
-      {
-        "ConsumerLoansRequest": [
-          {
-            "loanAccountNumber": "eiusmod adipisicing",
-            "fiCode": "aute",
-            "loanType": "consectetur eiusmod aute eu"
-          },
-          {
-            "loanAccountNumber": "culpa eiusmod ad Lorem",
-            "fiCode": "cillum",
-            "loanType": "commodo Excepteur nulla"
-          },
-          {
-            "loanAccountNumber": "aliquip labore",
-            "fiCode": "adipisicing consectetur esse",
-            "loanType": "ea ullamco esse"
-          }
-        ]
-      }
 paths:
   /getData:
     get:
