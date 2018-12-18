@@ -36,7 +36,7 @@ The following set of systems can be used as reference for building *production (
 |	Master	| 3	| 8	| 32 | 300 |
 |	Management | 2	| 8	| 32 | 300 |
 |	Proxy	| 3	| 4	| 16 | 300 |
-|	Worker  | 3 | 8 | 32 | 300+750(disk2)|
+|	Worker  | 3 | 16 | 64 | 300+750(disk2)|
 |	Total |	12	| 108| 432 | 5348+2250(disk2) |
 
 **NOTE:** Additional worker nodes will be required when there is a a need to run workloads other than IBM API Connect on IBM Cloud Private.
