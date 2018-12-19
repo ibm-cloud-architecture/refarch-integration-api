@@ -80,16 +80,16 @@ The contents of the script [fixHelm.sh](./apic-install/fixHelm.sh) is as follows
 
 ```
 #
-# Run this script only once 
+# Run this script only once
 #
 
 #!/bin/bash
-FILE=/usr/local/bin/helmICP
+FILE=/usr/local/bin/helmOrig
 
 if [ ! -f "$FILE" ]
 then
     echo "File $FILE does not exist"
-    cp /usr/local/bin/helm /usr/local/bin/helmICP
+    cp /usr/local/bin/helm /usr/local/bin/helmOrig
     cp ./helm  /usr/local/bin/helm
 fi
 ```
