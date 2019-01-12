@@ -651,7 +651,7 @@ The following link can be used as reference to set up Gateway Service:
 
 The value of **API Endpoint Base** can be set to the value used in the parameter *GATEWAY_ENDPOINT* in the script [installGateway.sh](./apic-install/apic/installGateway.sh)
 
-The value of **Endpoint** can be set to the value **"https://<DYNAMIC_GATEWAY_SERVICE_INGRESS_NAME>.<NAMESPACE>.svc:3000"** .
+The value of **Endpoint** can be set to the value *"https://DYNAMIC_GATEWAY_SERVICE_INGRESS_NAME.NAMESPACE.svc:3000"*.
 
 **Note:** DYNAMIC_GATEWAY_SERVICE_INGRESS_NAME can be retrieved using the output of the following command:
 
