@@ -651,7 +651,7 @@ The following link can be used as reference to set up Gateway Service:
 
 The value of **API Endpoint Base** can be set to the value used in the parameter *GATEWAY_ENDPOINT* in the script [installGateway.sh](./apic-install/apic/installGateway.sh)
 
-The value of **Endpoint** can be set to the value *"https://<DYNAMIC_GATEWAY_SERVICE_INGRESS_NAME>.<NAMESPACE>.svc:3000"*.
+The value of **Endpoint** can be set to the value **"https://<DYNAMIC_GATEWAY_SERVICE_INGRESS_NAME>.<NAMESPACE>.svc:3000"** .
 
 **Note:** DYNAMIC_GATEWAY_SERVICE_INGRESS_NAME can be retrieved using the output of the following command:
 
@@ -728,7 +728,7 @@ The screen shot having default gateway is listed below.
 
 #### 10.2 Import API and Product
 
-**Note:** Sample API [hello_1.0.1.yaml](./samples/hello_1.0.1.yaml) and the Product [samples_1.0.1.yaml](./samples/samples_1.0.1.yaml) can be used for the import.
+**Note:** Sample API [hello_1.0.1.yaml](./apic-install/samples/hello_1.0.1.yaml) and the Product [samples_1.0.1.yaml](./apic-install/samples/samples_1.0.1.yaml) can be used for the import.
 
 The following link can be used as a reference to import API and Product.
 
