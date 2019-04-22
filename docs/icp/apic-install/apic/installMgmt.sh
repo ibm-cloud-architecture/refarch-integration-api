@@ -37,12 +37,6 @@ apicup subsys set mgmt cassandra-backup-path $BACKUP_DIR/cassandra
 apicup subsys set mgmt cassandra-backup-auth-user  $FTP_USER
 apicup subsys set mgmt cassandra-backup-auth-pass  $FTP_PASS
 apicup subsys set mgmt cassandra-backup-schedule "0 0 * * *"
-apicup subsys set mgmt cassandra-postmortems-host $BACKUP_HOST 
-apicup subsys set mgmt cassandra-postmortems-port 22
-apicup subsys set mgmt cassandra-postmortems-path $BACKUP_DIR/cassandra-postmortems
-apicup subsys set mgmt cassandra-postmortems-auth-user $FTP_USER
-apicup subsys set mgmt cassandra-postmortems-auth-pass $FTP_PASS
-apicup subsys set mgmt cassandra-postmortems-schedule "0 0 * * *"
 apicup subsys set mgmt storage-class rbd-storage-class
 apicup subsys set mgmt mode dev
 
